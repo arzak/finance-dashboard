@@ -6,7 +6,7 @@ import { migrateOrphanedDocs } from "./migrate";
 import { collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, where } from "firebase/firestore";
 
 const INITIAL_TRANSACTIONS = [
-    { id: '1', store: "Apple Store", category: "Tecnología", type: "gasto", paymentMethod: "Visa Gold", amount: 14.99, date: "Hoy", icon: "shopping_bag", iconColor: "blue" },
+    { id: '1', store: "Applee Store", category: "Tecnología", type: "gasto", paymentMethod: "Visa Gold", amount: 14.99, date: "Hoy", icon: "shopping_bag", iconColor: "blue" },
     { id: '2', store: "Depósito de Nómina", category: "Nómina", type: "ingreso", paymentMethod: "Bank Transfer", amount: 8400.00, date: "22 Oct", icon: "payments", iconColor: "emerald" },
     { id: '3', store: "La Cafetería", category: "Comida", type: "gasto", paymentMethod: "Efectivo", amount: 6.50, date: "21 Oct", icon: "restaurant", iconColor: "orange" },
 ];
