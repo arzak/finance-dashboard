@@ -470,8 +470,8 @@ function App() {
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark scrollbar-hide">
-                <header className="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-8 py-6 flex justify-between items-center">
+            <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark scrollbar-hide pb-20 md:pb-0 relative">
+                <header className="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 md:px-8 py-4 md:py-6 flex justify-between items-center border-b border-transparent md:border-b-0">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
                             {activeTab === 'panel' ? 'Panel de Control' : activeTab === 'transacciones' ? 'Transacciones' : 'Reportes Financieros'}
@@ -485,7 +485,7 @@ function App() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setIsModalOpen(true)}
-                            className="bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-semibold text-sm flex items-center gap-2 transition-colors shadow-lg shadow-primary/20"
+                            className="hidden md:flex bg-primary hover:bg-primary/90 text-white px-5 py-2 rounded-lg font-semibold text-sm items-center gap-2 transition-colors shadow-lg shadow-primary/20"
                         >
                             <span className="material-symbols-outlined text-lg">add</span>
                             Agregar Rápido
@@ -1114,6 +1114,31 @@ function App() {
                         </div>
                     );
                 })()}
+
+                {/* Mobile Bottom Navigation (Thumb Zone) */}
+                <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-around items-center px-4 py-3 z-50 pb-safe">
+                    <button onClick={() => setActiveTab('panel')} className={`flex flex-col items-center gap-1 min-w-[64px] ${activeTab === 'panel' ? 'text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+                        <span className={`material-symbols-outlined ${activeTab === 'panel' ? 'text-2xl' : 'text-xl'}`}>dashboard</span>
+                        <span className="text-[10px] font-semibold">Panel</span>
+                    </button>
+                    <button onClick={() => setActiveTab('transacciones')} className={`flex flex-col items-center gap-1 min-w-[64px] ${activeTab === 'transacciones' ? 'text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+                        <span className={`material-symbols-outlined ${activeTab === 'transacciones' ? 'text-2xl' : 'text-xl'}`}>receipt_long</span>
+                        <span className="text-[10px] font-semibold">Movimientos</span>
+                    </button>
+                    <button onClick={() => setIsModalOpen(true)} className="flex flex-col items-center justify-center -mt-6">
+                        <div className="size-12 bg-primary text-white rounded-full flex items-center justify-center shadow-lg shadow-primary/30 border-4 border-background-light dark:border-background-dark">
+                            <span className="material-symbols-outlined text-2xl">add</span>
+                        </div>
+                    </button>
+                    <button onClick={() => setActiveTab('reportes')} className={`flex flex-col items-center gap-1 min-w-[64px] ${activeTab === 'reportes' ? 'text-primary' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}>
+                        <span className={`material-symbols-outlined ${activeTab === 'reportes' ? 'text-2xl' : 'text-xl'}`}>bar_chart</span>
+                        <span className="text-[10px] font-semibold">Resumen</span>
+                    </button>
+                    <button onClick={logout} className={`flex flex-col items-center gap-1 min-w-[64px] text-slate-400 hover:text-rose-500`}>
+                        <span className="material-symbols-outlined text-xl">logout</span>
+                        <span className="text-[10px] font-semibold">Salir</span>
+                    </button>
+                </nav>
 
             </main>
 
