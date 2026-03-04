@@ -33,8 +33,8 @@ function AddTransactionModal({ isOpen, onClose, onAdd, creditCards }) {
             amount: parseFloat(amount),
             type,
             date: "Justo ahora",
-            icon: category === "Comida" ? "restaurant" : category === "Tecnología" ? "shopping_bag" : category === "Nómina" ? "payments" : "credit_card",
-            iconColor: category === "Comida" ? "orange" : category === "Tecnología" ? "blue" : category === "Nómina" ? "emerald" : "purple",
+            icon: category === "Comida" ? "restaurant" : category === "Tecnología" ? "shopping_bag" : category === "Nómina" ? "payments" : category === "Ahorro" ? "savings" : "credit_card",
+            iconColor: category === "Comida" ? "orange" : category === "Tecnología" ? "blue" : category === "Nómina" ? "emerald" : category === "Ahorro" ? "indigo" : "purple",
         });
 
         setStore("");
@@ -125,6 +125,7 @@ function AddTransactionModal({ isOpen, onClose, onAdd, creditCards }) {
                                     ) : (
                                         <>
                                             <option value="Nómina">Nómina</option>
+                                            <option value="Ahorro">Ahorro</option>
                                             <option value="Otros">Otros Ingresos</option>
                                         </>
                                     )}
