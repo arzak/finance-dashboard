@@ -34,6 +34,8 @@ export default function AuthScreen() {
         "auth/too-many-requests": "Demasiados intentos. Intenta más tarde.",
         "auth/popup-closed-by-user": "Ventana de Google cerrada. Intenta de nuevo.",
         "auth/popup-blocked": "El navegador bloqueó el popup. Permite los popups para este sitio.",
+        "auth/unauthorized-domain": "Este dominio no está autorizado. Contacta al administrador.",
+        "auth/network-request-failed": "Error de conexión. Verifica tu internet.",
     };
 
     const handleSubmit = async (e) => {
@@ -58,9 +60,9 @@ export default function AuthScreen() {
         setGoogleLoading(true);
         try {
             await loginWithGoogle();
-            // onAuthStateChanged in AuthContext handles redirect automatically
         } catch (err) {
-            setError(ERROR_MESSAGES[err.code] || "Error al iniciar con Google.");
+            console.error("Google login error:", err);
+            setError(ERROR_MESSAGES[err.code] || `Error al iniciar con Google: ${err.message}`);
         }
         setGoogleLoading(false);
     };
