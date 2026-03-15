@@ -934,9 +934,9 @@ function App() {
                                     </div>
                                     {(() => {
                                         const isPositive = efectivoDisponible >= 0;
-                                        const pctLabel = totalIngresos > 0
-                                            ? ((efectivoDisponible / totalIngresos) * 100).toFixed(1)
-                                            : '0.0';
+                                        // Limitar porcentaje entre -100% y 100% para visualización
+                                        const rawPct = totalIngresos > 0 ? ((efectivoDisponible / totalIngresos) * 100) : 0;
+                                        const pctLabel = Math.max(-100, Math.min(100, rawPct)).toFixed(1);
                                         return (
                                             <span className={`flex items-center gap-1 font-semibold text-sm px-2 py-0.5 rounded ${isPositive ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
                                                 <span className="material-symbols-outlined text-xs">{isPositive ? 'trending_up' : 'trending_down'}</span>
@@ -1658,7 +1658,13 @@ function App() {
                     // Tasa de ahorro = (Ingresos - Gastos Reales) / Ingresos * 100
                     // Los pagos a tarjetas no son ahorro, son reducción de deuda
                     const ahorroReal = totalIngresos - totalGastosReales;
-                    const savingsRate = totalIngresos > 0 ? (ahorroReal / totalIngresos) * 100 : 0;
+
+                    // Limitar la tasa entre -100% y 100% para que tenga sentido financiero
+                    let savingsRate = totalIngresos > 0 ? (ahorroReal / totalIngresos) * 100 : 0;
+                    savingsRate = Math.max(-100, Math.min(100, savingsRate)); // Clamp entre -100 y 100
+
+                    // Determinar color según si hay ahorro positivo o negativo
+                    const savingsColor = savingsRate >= 50 ? 'emerald' : savingsRate >= 20 ? 'blue' : savingsRate >= 0 ? 'amber' : 'rose';
 
                     // Group by store for Top 5
                     const storeTotals = {};
@@ -1705,7 +1711,8 @@ function App() {
                                             <svg className="size-full rotate-[-90deg]" viewBox="0 0 36 36">
                                                 <circle className="text-slate-100 dark:text-slate-800" cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" />
                                                 <motion.circle
-                                                    className="text-emerald-500" cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3"
+                                                    className={`${savingsColor === 'emerald' ? 'text-emerald-500' : savingsColor === 'blue' ? 'text-blue-500' : savingsColor === 'amber' ? 'text-amber-500' : 'text-rose-500'}`}
+                                                    cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3"
                                                     strokeDasharray={`${Math.max(0, savingsRate)}, 100`}
                                                     initial={{ strokeDasharray: "0, 100" }}
                                                     animate={{ strokeDasharray: `${Math.max(0, savingsRate)}, 100` }}
@@ -1714,11 +1721,22 @@ function App() {
                                                 />
                                             </svg>
                                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                <span className="text-2xl font-black text-slate-900 dark:text-white">{savingsRate.toFixed(1)}%</span>
+                                                <span className={`text-2xl font-black ${savingsRate >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'}`}>
+                                                    {savingsRate >= 0 ? savingsRate.toFixed(1) : savingsRate.toFixed(1)}%
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-center text-slate-500 mt-2">
+                                    <div className="text-center mt-2">
+                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${savingsColor === 'emerald' ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30' :
+                                            savingsColor === 'blue' ? 'text-blue-700 bg-blue-100 dark:bg-blue-900/30' :
+                                                savingsColor === 'amber' ? 'text-amber-700 bg-amber-100 dark:bg-amber-900/30' :
+                                                    'text-rose-700 bg-rose-100 dark:bg-rose-900/30'
+                                            }`}>
+                                            {savingsRate >= 50 ? '¡Excelente!' : savingsRate >= 20 ? 'Buen trabajo' : savingsRate >= 0 ? 'Puede mejorar' : 'Atención necesaria'}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-center text-slate-500 mt-3">
                                         Tu ahorro es de <span className="text-emerald-500 font-bold">${ahorroReal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span> sobre ingresos de <span className="text-slate-600 dark:text-slate-400 font-bold">${totalIngresos.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>.
                                         {totalPagosTarjetas > 0 && (
                                             <span className="block mt-1">Incluye ${totalPagosTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })} en pagos a tarjetas.</span>
