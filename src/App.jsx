@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
@@ -234,6 +234,178 @@ function AddCreditCardModal({ isOpen, onClose, onAddCard }) {
     );
 }
 
+function PaymentModal({ isOpen, onClose, card, onPayment, spentPerCard }) {
+    const [amount, setAmount] = useState("");
+
+    useEffect(() => {
+        if (card) {
+            setAmount("");
+        }
+    }, [card]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!amount || parseFloat(amount) <= 0) return;
+        onPayment(card.id, parseFloat(amount));
+        onClose();
+    };
+
+    const initialDebt = card?.initialDebt || 0;
+    const payments = card?.payments || 0;
+    const spentByTx = card ? (spentPerCard[card.name] || 0) : 0;
+    const totalDebt = initialDebt + spentByTx - payments;
+
+    return (
+        <AnimatePresence>
+            {isOpen && card && (
+                <>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40" />
+                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl z-50 border border-slate-200 dark:border-slate-800">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Registrar Pago</h2>
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-1">{card.name}</p>
+                            <p className="text-xs text-slate-500">**** {card.lastFour}</p>
+                            <div className="mt-3 space-y-2">
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Deuda inicial:</span>
+                                    <span className="font-semibold">${initialDebt.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Gastos del mes:</span>
+                                    <span className="font-semibold text-rose-500">−${spentByTx.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-slate-500">Pagos realizados:</span>
+                                    <span className="font-semibold text-emerald-500">+${payments.toFixed(2)}</span>
+                                </div>
+                                <div className="pt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between">
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Deuda actual:</span>
+                                    <span className="text-lg font-black text-rose-500">−${totalDebt.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monto a pagar ($)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={amount}
+                                    onChange={(e) => setAmount(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-emerald-500/30"
+                            >
+                                Registrar Pago
+                            </button>
+                        </form>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    );
+}
+
+function EditCreditCardModal({ isOpen, onClose, card, onSave }) {
+    const [name, setName] = useState("");
+    const [lastFour, setLastFour] = useState("");
+    const [limit, setLimit] = useState("");
+    const [initialDebt, setInitialDebt] = useState("");
+    const [themeColor, setThemeColor] = useState("blue");
+
+    useEffect(() => {
+        if (card) {
+            setName(card.name || "");
+            setLastFour(card.lastFour || "");
+            setLimit(card.limit || card.límite || "");
+            setInitialDebt(card.initialDebt || 0);
+            setThemeColor(card.themeColor || "blue");
+        }
+    }, [card]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!name || !lastFour) return;
+
+        onSave({
+            name,
+            lastFour,
+            limit: parseFloat(limit) || 0,
+            initialDebt: parseFloat(initialDebt) || 0,
+            themeColor
+        });
+
+        onClose();
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40" />
+                    <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl z-50 border border-slate-200 dark:border-slate-800">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Editar Tarjeta</h2>
+                            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre de Tarjeta</label>
+                                <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="e.g. Visa Gold" required />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Últimos 4 Dígitos</label>
+                                    <input type="text" maxLength="4" value={lastFour} onChange={(e) => setLastFour(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="1234" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Límite ($)</label>
+                                    <input type="number" step="100" value={limit} onChange={(e) => setLimit(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="10000" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Deuda Inicial ($)
+                                    <span className="block text-xs text-slate-500 font-normal mt-0.5">Deuda acumulada de meses anteriores</span>
+                                </label>
+                                <input type="number" step="0.01" value={initialDebt} onChange={(e) => setInitialDebt(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Color de Tarjeta</label>
+                                <select value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                    <option value="blue">Blue</option>
+                                    <option value="rose">Rose</option>
+                                    <option value="emerald">Emerald</option>
+                                    <option value="purple">Purple</option>
+                                    <option value="orange">Orange</option>
+                                </select>
+                            </div>
+                            <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-primary/30 mt-6">
+                                Guardar Cambios
+                            </button>
+                        </form>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    );
+}
+
 function App() {
     const { currentUser, logout } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -246,6 +418,18 @@ function App() {
     const [txFilterCategory, setTxFilterCategory] = useState('todas');
     const [txFilterMonth, setTxFilterMonth] = useState('todos');
     const [creditCards, setCreditCards] = useState([]);
+    // Pagination for Recent Transactions
+    const [recentPage, setRecentPage] = useState(0);
+    const RECENT_PER_PAGE = 5;
+    // Pagination for Transacciones tab
+    const [txPage, setTxPage] = useState(0);
+    const TX_PER_PAGE = 10;
+    // Edit card modal
+    const [isEditCardModalOpen, setIsEditCardModalOpen] = useState(false);
+    const [cardToEdit, setCardToEdit] = useState(null);
+    // Payment modal
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [cardToPay, setCardToPay] = useState(null);
 
     // --- Migration: assign orphaned docs to oldtees@mail.com on first login ---
     useEffect(() => {
@@ -299,6 +483,30 @@ function App() {
         return () => { unsubscribeTxs(); unsubscribeCards(); };
     }, [currentUser]);
 
+    // Reset txPage when filters change
+    const prevFiltersRef = useRef({ txSearch, txFilterType, txFilterCategory, txFilterMonth });
+    useEffect(() => {
+        const prev = prevFiltersRef.current;
+        if (
+            prev.txSearch !== txSearch ||
+            prev.txFilterType !== txFilterType ||
+            prev.txFilterCategory !== txFilterCategory ||
+            prev.txFilterMonth !== txFilterMonth
+        ) {
+            setTxPage(0);
+            prevFiltersRef.current = { txSearch, txFilterType, txFilterCategory, txFilterMonth };
+        }
+    }, [txSearch, txFilterType, txFilterCategory, txFilterMonth]);
+
+    // Reset recentPage when transactions change
+    const prevTxCountRef = useRef(transactions.length);
+    useEffect(() => {
+        if (prevTxCountRef.current !== transactions.length) {
+            setRecentPage(0);
+            prevTxCountRef.current = transactions.length;
+        }
+    }, [transactions.length]);
+
     const handleAddGasto = async (gasto) => {
         if (!db || !currentUser) return;
         try {
@@ -325,9 +533,44 @@ function App() {
         }
     };
 
-    const totalIngresos = transactions.reduce((acc, tx) => tx.type === 'ingreso' ? acc + parseFloat(tx.amount) : acc, 0);
-    const totalGastos = transactions.reduce((acc, tx) => tx.type === 'gasto' ? acc + parseFloat(tx.amount) : acc, 0);
-    const totalAvailable = totalIngresos - totalGastos;
+    const handleUpdateCard = async (cardId, updatedData) => {
+        if (!db || !currentUser) return;
+        try {
+            const { doc, updateDoc } = await import("firebase/firestore");
+            const cardRef = doc(db, "creditCards", cardId);
+            await updateDoc(cardRef, updatedData);
+        } catch (error) {
+            console.error("Error updating card:", error);
+        }
+    };
+
+    const handleAddPayment = async (cardId, amount) => {
+        if (!db || !currentUser) return;
+        try {
+            const { doc, updateDoc, increment } = await import("firebase/firestore");
+            const cardRef = doc(db, "creditCards", cardId);
+            // Add payment to card's payments field
+            await updateDoc(cardRef, {
+                payments: increment(amount)
+            });
+            // Also create a transaction record for the payment
+            await addDoc(collection(db, "transactions"), {
+                store: `Pago a tarjeta`,
+                category: "Transferencia",
+                paymentMethod: "Pago de Tarjeta",
+                amount: parseFloat(amount),
+                type: "pago_tarjeta",
+                cardId: cardId,
+                userId: currentUser.uid,
+                createdAt: serverTimestamp(),
+                date: "Justo ahora",
+                icon: "payments",
+                iconColor: "emerald"
+            });
+        } catch (error) {
+            console.error("Error adding payment:", error);
+        }
+    };
 
     // Gasto real por tarjeta (basado en transacciones)
     const spentPerCard = {};
@@ -336,6 +579,31 @@ function App() {
             spentPerCard[tx.paymentMethod] = (spentPerCard[tx.paymentMethod] || 0) + parseFloat(tx.amount);
         }
     });
+
+    const totalIngresos = transactions.reduce((acc, tx) => tx.type === 'ingreso' ? acc + parseFloat(tx.amount) : acc, 0);
+    const totalGastos = transactions.reduce((acc, tx) => tx.type === 'gasto' ? acc + parseFloat(tx.amount) : acc, 0);
+    const totalPagosTarjetas = transactions.reduce((acc, tx) => tx.type === 'pago_tarjeta' ? acc + parseFloat(tx.amount) : acc, 0);
+    const totalAvailable = totalIngresos - totalGastos - totalPagosTarjetas;
+
+    // Calcular deuda total de todas las tarjetas
+    const totalDeudaTarjetas = creditCards.reduce((acc, card) => {
+        const initialDebt = card.initialDebt || 0;
+        const payments = card.payments || 0;
+        const spentByTx = spentPerCard[card.name] || 0;
+        return acc + (initialDebt + spentByTx - payments);
+    }, 0);
+
+    // Balance real considerando deudas de tarjetas
+    const realBalance = totalIngresos - totalGastos - totalDeudaTarjetas;
+
+    // Colores para las tarjetas (para evitar clases dinámicas de Tailwind)
+    const cardColors = {
+        blue: { bg: 'rgba(59, 130, 246, 0.1)', text: '#3b82f6', bar: '#3b82f6', border: '#60a5fa' },
+        rose: { bg: 'rgba(244, 63, 94, 0.1)', text: '#f43f5e', bar: '#f43f5e', border: '#fb7185' },
+        emerald: { bg: 'rgba(16, 185, 129, 0.1)', text: '#10b981', bar: '#10b981', border: '#34d399' },
+        purple: { bg: 'rgba(168, 85, 247, 0.1)', text: '#a855f7', bar: '#a855f7', border: '#c084fc' },
+        orange: { bg: 'rgba(251, 146, 60, 0.1)', text: '#fb923c', bar: '#fb923c', border: '#fdba74' },
+    };
 
     // Datos mensuales por tarjeta - últimos 6 meses
     const MONTHS_ES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -562,51 +830,100 @@ function App() {
                         <div className="col-span-12 lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm">
                             <div className="flex justify-between items-center mb-6">
                                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">Uso de Tarjetas</h3>
-                                <button onClick={() => setIsCardModalOpen(true)} className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all">
-                                    <span className="material-symbols-outlined text-xl">add</span>
-                                </button>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setIsCardModalOpen(true)} className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" title="Agregar tarjeta">
+                                        <span className="material-symbols-outlined text-xl">add</span>
+                                    </button>
+                                </div>
                             </div>
                             <div className="space-y-5">
                                 <AnimatePresence>
                                     {creditCards.map((card) => {
                                         const spentByTx = spentPerCard[card.name] || 0;
+                                        const initialDebt = card.initialDebt || 0;
+                                        const payments = card.payments || 0;
+                                        const totalDebt = initialDebt + spentByTx - payments;
                                         const cardLimit = card.limit || card.límite || 0;
-                                        const percentUsed = cardLimit > 0 ? Math.min((spentByTx / cardLimit) * 100, 100) : 0;
+                                        const percentUsed = cardLimit > 0 ? Math.min((totalDebt / cardLimit) * 100, 100) : 0;
+                                        const colors = cardColors[card.themeColor] || cardColors.blue;
                                         const isSelected = (selectedCardId ?? creditCards[0]?.id) === card.id;
                                         return (
                                             <motion.div
                                                 key={card.id}
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
-                                                onClick={() => setSelectedCardId(card.id)}
-                                                className={`space-y-2 p-3 rounded-xl cursor-pointer transition-all border ${isSelected
-                                                    ? `border-${card.themeColor}-400 bg-${card.themeColor}-50 dark:bg-${card.themeColor}-900/20`
-                                                    : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                                                    }`}
+                                                className="space-y-3 p-3 rounded-xl transition-all border"
+                                                style={{
+                                                    borderColor: isSelected ? colors.border : 'transparent',
+                                                    backgroundColor: isSelected ? colors.bg : 'transparent',
+                                                }}
                                             >
-                                                <div className="flex justify-between items-end">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`size-8 rounded bg-${card.themeColor}-600/10 flex items-center justify-center text-${card.themeColor}-600`}>
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <div className="flex items-center gap-3 flex-1" onClick={() => setSelectedCardId(card.id)}>
+                                                        <div className="size-8 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.bg, color: colors.text }}>
                                                             <span className="material-symbols-outlined text-lg">credit_score</span>
                                                         </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{card.name}</p>
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{card.name}</p>
                                                             <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">**** {card.lastFour}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
-                                                        <p className="text-sm font-bold text-rose-500">−${spentByTx.toFixed(2)}</p>
-                                                        <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">de ${cardLimit.toLocaleString()} límite</p>
+                                                    <div className="flex gap-1">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setCardToPay(card); setIsPaymentModalOpen(true); }}
+                                                            className="size-8 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 hover:bg-emerald-200 dark:hover:bg-emerald-900/30 transition-all flex-shrink-0"
+                                                            title="Registrar pago"
+                                                        >
+                                                            <span className="material-symbols-outlined text-sm">money</span>
+                                                        </button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); setCardToEdit(card); setIsEditCardModalOpen(true); }}
+                                                            className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0"
+                                                            title="Editar tarjeta"
+                                                        >
+                                                            <span className="material-symbols-outlined text-sm">edit</span>
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                                                    <motion.div initial={{ width: 0 }} animate={{ width: `${percentUsed}%` }} transition={{ duration: 1 }} className={`bg-${card.themeColor}-500 h-full rounded-full`}></motion.div>
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2 text-center">
+                                                        <p className="text-[9px] text-slate-500 uppercase font-bold">Deuda inicial</p>
+                                                        <p className="text-xs font-semibold text-slate-600">${initialDebt.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="bg-rose-50 dark:bg-rose-900/10 rounded-lg p-2 text-center">
+                                                        <p className="text-[9px] text-rose-500 uppercase font-bold">Gastos mes</p>
+                                                        <p className="text-xs font-semibold text-rose-500">${spentByTx.toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2 text-center">
+                                                        <p className="text-[9px] text-emerald-500 uppercase font-bold">Pagos</p>
+                                                        <p className="text-xs font-semibold text-emerald-500">${payments.toFixed(2)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="text-xs font-bold text-slate-600">Deuda Total</span>
+                                                        <span className="text-lg font-black text-rose-500">−${totalDebt.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full rounded-full transition-all"
+                                                            style={{ width: `${percentUsed}%`, backgroundColor: colors.bar }}
+                                                        ></div>
+                                                    </div>
+                                                    <p className="text-[9px] text-slate-500 text-right mt-1">{percentUsed.toFixed(0)}% del límite (${cardLimit.toLocaleString()})</p>
                                                 </div>
                                             </motion.div>
                                         )
                                     })}
                                 </AnimatePresence>
                             </div>
+                            {creditCards.length === 0 && (
+                                <div className="py-8 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 block mb-2">credit_card</span>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm">No hay tarjetas registradas</p>
+                                    <p className="text-slate-400 dark:text-slate-600 text-xs mt-1">Agrega una tarjeta para comenzar</p>
+                                </div>
+                            )}
                             {activeCard && (
                                 <p className="text-[10px] text-slate-400 mt-3 text-center">
                                     Toca una tarjeta para ver su historial en la gráfica ↑
@@ -693,31 +1010,92 @@ function App() {
                                 <h3 className="font-bold text-lg text-slate-900 dark:text-white">Recent Transacciones</h3>
                                 <button className="text-primary text-sm font-semibold hover:underline">Descargar Estado de Cuenta</button>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-4">
+
+                            {/* List Container */}
+                            <div className="space-y-3">
                                 <AnimatePresence>
-                                    {transactions.map((tx) => (
-                                        <motion.div
-                                            key={tx.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
-                                            className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-50 dark:border-slate-800/50 pb-4"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className={`size-10 rounded-full bg-${tx.iconColor}-100 dark:bg-${tx.iconColor}-500/10 text-${tx.iconColor}-600 flex items-center justify-center`}>
-                                                    <span className="material-symbols-outlined text-xl">{tx.icon}</span>
+                                    {transactions
+                                        .slice(recentPage * RECENT_PER_PAGE, (recentPage + 1) * RECENT_PER_PAGE)
+                                        .map((tx) => (
+                                            <motion.div
+                                                key={tx.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.9 }}
+                                                className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-slate-100 dark:border-slate-800/50"
+                                            >
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`size-10 rounded-full bg-${tx.iconColor}-100 dark:bg-${tx.iconColor}-500/10 text-${tx.iconColor}-600 flex items-center justify-center flex-shrink-0`}>
+                                                        <span className="material-symbols-outlined text-xl">{tx.icon}</span>
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{tx.store}</p>
+                                                        <p className="text-xs text-slate-500 truncate">{tx.category} • {tx.paymentMethod ? `${tx.paymentMethod} • ` : ''}{tx.date}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{tx.store}</p>
-                                                    <p className="text-xs text-slate-500">{tx.category} • {tx.paymentMethod ? `${tx.paymentMethod} • ` : ''}{tx.date}</p>
-                                                </div>
-                                            </div>
-                                            <p className={`font-bold text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                                {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toFixed(2)}
-                                            </p>
-                                        </motion.div>
-                                    ))}
+                                                <p className={`font-bold text-sm flex-shrink-0 ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                    {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toFixed(2)}
+                                                </p>
+                                            </motion.div>
+                                        ))}
                                 </AnimatePresence>
+
+                                {transactions.length === 0 && (
+                                    <div className="py-12 text-center">
+                                        <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 block mb-2">receipt_long</span>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm">No hay transacciones recientes</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Paginación */}
+                            {transactions.length > RECENT_PER_PAGE && (
+                                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-6">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        Página {recentPage + 1} de {Math.ceil(transactions.length / RECENT_PER_PAGE)} • Mostrando {Math.min(transactions.length - recentPage * RECENT_PER_PAGE, RECENT_PER_PAGE)} de {transactions.length} transacciones
+                                    </p>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setRecentPage(p => Math.max(0, p - 1))}
+                                            disabled={recentPage === 0}
+                                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                        >
+                                            Anterior
+                                        </button>
+                                        <div className="hidden sm:flex items-center gap-1">
+                                            {Array.from({ length: Math.ceil(transactions.length / RECENT_PER_PAGE) }, (_, i) => i).map((i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setRecentPage(i)}
+                                                    className={`w-8 h-8 rounded-lg transition-all text-sm font-medium ${i === recentPage
+                                                        ? 'bg-primary text-white shadow-md shadow-primary/30'
+                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                        }`}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setRecentPage(p => Math.min(Math.ceil(transactions.length / RECENT_PER_PAGE) - 1, p + 1))}
+                                            disabled={recentPage >= Math.ceil(transactions.length / RECENT_PER_PAGE) - 1}
+                                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                        >
+                                            Siguiente
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* View All Link */}
+                            <div className="text-center mt-4">
+                                <button
+                                    onClick={() => setActiveTab('transacciones')}
+                                    className="text-primary text-sm font-semibold hover:underline flex items-center justify-center gap-1 mx-auto"
+                                >
+                                    Ver todas las transacciones
+                                    <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                </button>
                             </div>
                         </div>
 
@@ -755,6 +1133,10 @@ function App() {
                         }
                         return matchSearch && matchType && matchCat && matchMonth;
                     });
+
+                    const totalPages = Math.ceil(filtered.length / TX_PER_PAGE);
+                    const currentPage = txPage >= totalPages ? 0 : txPage;
+                    const paginatedFiltered = filtered.slice(currentPage * TX_PER_PAGE, (currentPage + 1) * TX_PER_PAGE);
 
                     const totalFiltrado = filtered.reduce((acc, tx) =>
                         tx.type === 'gasto' ? acc - parseFloat(tx.amount) : acc + parseFloat(tx.amount), 0);
@@ -896,54 +1278,95 @@ function App() {
                                         <p className="text-slate-400 dark:text-slate-600 text-sm mt-1">Intenta ajustar los filtros o el buscador</p>
                                     </div>
                                 ) : (
-                                    <div className="divide-y divide-slate-50 dark:divide-slate-800">
-                                        <AnimatePresence>
-                                            {filtered.map((tx, idx) => {
-                                                const txDate = tx.createdAt && typeof tx.createdAt.toDate === 'function'
-                                                    ? tx.createdAt.toDate()
-                                                    : (tx.date === 'Hoy' || tx.date === 'Justo ahora' ? new Date() : null);
-                                                const dateLabel = txDate
-                                                    ? txDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
-                                                    : tx.date;
-                                                return (
-                                                    <motion.div
-                                                        key={tx.id}
-                                                        initial={{ opacity: 0, y: 6 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                                        className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={`size-11 rounded-full bg-${tx.iconColor || 'slate'}-100 dark:bg-${tx.iconColor || 'slate'}-500/10 text-${tx.iconColor || 'slate'}-600 flex items-center justify-center flex-shrink-0`}>
-                                                                <span className="material-symbols-outlined text-xl">{tx.icon || 'receipt'}</span>
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{tx.store}</p>
-                                                                <div className="flex items-center gap-2 mt-0.5">
-                                                                    <span className="text-[11px] text-slate-400">{tx.category}</span>
-                                                                    {tx.paymentMethod && <>
+                                    <>
+                                        <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                                            <AnimatePresence>
+                                                {paginatedFiltered.map((tx, idx) => {
+                                                    const txDate = tx.createdAt && typeof tx.createdAt.toDate === 'function'
+                                                        ? tx.createdAt.toDate()
+                                                        : (tx.date === 'Hoy' || tx.date === 'Justo ahora' ? new Date() : null);
+                                                    const dateLabel = txDate
+                                                        ? txDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })
+                                                        : tx.date;
+                                                    return (
+                                                        <motion.div
+                                                            key={tx.id}
+                                                            initial={{ opacity: 0, y: 6 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0 }}
+                                                            transition={{ duration: 0.2, delay: idx * 0.02 }}
+                                                            className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-4">
+                                                                <div className={`size-11 rounded-full bg-${tx.iconColor || 'slate'}-100 dark:bg-${tx.iconColor || 'slate'}-500/10 text-${tx.iconColor || 'slate'}-600 flex items-center justify-center flex-shrink-0`}>
+                                                                    <span className="material-symbols-outlined text-xl">{tx.icon || 'receipt'}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{tx.store}</p>
+                                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                                        <span className="text-[11px] text-slate-400">{tx.category}</span>
+                                                                        {tx.paymentMethod && <>
+                                                                            <span className="text-slate-300 dark:text-slate-700">•</span>
+                                                                            <span className="text-[11px] text-slate-400">{tx.paymentMethod}</span>
+                                                                        </>}
                                                                         <span className="text-slate-300 dark:text-slate-700">•</span>
-                                                                        <span className="text-[11px] text-slate-400">{tx.paymentMethod}</span>
-                                                                    </>}
-                                                                    <span className="text-slate-300 dark:text-slate-700">•</span>
-                                                                    <span className="text-[11px] text-slate-400">{dateLabel}</span>
+                                                                        <span className="text-[11px] text-slate-400">{dateLabel}</span>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                        <div className="text-right flex-shrink-0 ml-4">
-                                                            <p className={`font-bold text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                                                {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                            </p>
-                                                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tx.type === 'gasto' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500'}`}>
-                                                                {tx.type === 'gasto' ? 'Gasto' : 'Ingreso'}
-                                                            </span>
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })}
-                                        </AnimatePresence>
-                                    </div>
+                                                            <div className="text-right flex-shrink-0 ml-4">
+                                                                <p className={`font-bold text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                                    {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                                </p>
+                                                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tx.type === 'gasto' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500'}`}>
+                                                                    {tx.type === 'gasto' ? 'Gasto' : 'Ingreso'}
+                                                                </span>
+                                                            </div>
+                                                        </motion.div>
+                                                    );
+                                                })}
+                                            </AnimatePresence>
+                                        </div>
+
+                                        {/* Paginación */}
+                                        {totalPages > 1 && (
+                                            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    Página {currentPage + 1} de {totalPages} • Mostrando {paginatedFiltered.length} de {filtered.length} transacciones
+                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => setTxPage(p => Math.max(0, p - 1))}
+                                                        disabled={currentPage === 0}
+                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                                    >
+                                                        Anterior
+                                                    </button>
+                                                    <div className="hidden sm:flex items-center gap-1">
+                                                        {Array.from({ length: totalPages }, (_, i) => i).map((i) => (
+                                                            <button
+                                                                key={i}
+                                                                onClick={() => setTxPage(i)}
+                                                                className={`w-8 h-8 rounded-lg transition-all text-sm font-medium ${i === currentPage
+                                                                    ? 'bg-primary text-white shadow-md shadow-primary/30'
+                                                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                                                    }`}
+                                                            >
+                                                                {i + 1}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setTxPage(p => Math.min(totalPages - 1, p + 1))}
+                                                        disabled={currentPage >= totalPages - 1}
+                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                                    >
+                                                        Siguiente
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -1153,6 +1576,19 @@ function App() {
                 isOpen={isCardModalOpen}
                 onClose={() => setIsCardModalOpen(false)}
                 onAddCard={handleAddCard}
+            />
+            <EditCreditCardModal
+                isOpen={isEditCardModalOpen}
+                onClose={() => { setIsEditCardModalOpen(false); setCardToEdit(null); }}
+                card={cardToEdit}
+                onSave={handleUpdateCard}
+            />
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => { setIsPaymentModalOpen(false); setCardToPay(null); }}
+                card={cardToPay}
+                spentPerCard={spentPerCard}
+                onPayment={handleAddPayment}
             />
         </div>
     );
