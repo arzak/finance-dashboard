@@ -1385,8 +1385,16 @@ function App() {
                     const currentPage = txPage >= totalPages ? 0 : txPage;
                     const paginatedFiltered = filtered.slice(currentPage * TX_PER_PAGE, (currentPage + 1) * TX_PER_PAGE);
 
-                    const totalFiltrado = filtered.reduce((acc, tx) =>
-                        tx.type === 'gasto' ? acc - parseFloat(tx.amount) : acc + parseFloat(tx.amount), 0);
+                    // Calcular totales filtrados correctamente
+                    // Los pagos a tarjetas no deben contar como gasto negativo en el balance
+                    const totalFiltrado = filtered.reduce((acc, tx) => {
+                        if (tx.type === 'pago_tarjeta') return acc; // Los pagos a tarjeta no afectan el balance filtrado
+                        return tx.type === 'gasto' ? acc - parseFloat(tx.amount) : acc + parseFloat(tx.amount);
+                    }, 0);
+
+                    const totalIngresosFiltrados = filtered.filter(t => t.type === 'ingreso').reduce((a, t) => a + parseFloat(t.amount), 0);
+                    const totalGastosFiltrados = filtered.filter(t => t.type === 'gasto').reduce((a, t) => a + parseFloat(t.amount), 0);
+                    const totalPagosFiltrados = filtered.filter(t => t.type === 'pago_tarjeta').reduce((a, t) => a + parseFloat(t.amount), 0);
 
                     const exportarCSV = () => {
                         const escapar = (val) => {
@@ -1486,11 +1494,12 @@ function App() {
                             </div>
 
                             {/* Resumen rápido */}
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {[
-                                    { label: 'Total Ingresos', value: filtered.filter(t => t.type === 'ingreso').reduce((a, t) => a + parseFloat(t.amount), 0), color: 'emerald', icon: 'trending_up' },
-                                    { label: 'Total Gastos', value: filtered.filter(t => t.type === 'gasto').reduce((a, t) => a + parseFloat(t.amount), 0), color: 'rose', icon: 'trending_down' },
-                                    { label: 'Balance Filtrado', value: totalFiltrado, color: totalFiltrado >= 0 ? 'blue' : 'rose', icon: totalFiltrado >= 0 ? 'account_balance_wallet' : 'warning' },
+                                    { label: 'Total Ingresos', value: totalIngresosFiltrados, color: 'emerald', icon: 'trending_up' },
+                                    { label: 'Total Gastos', value: totalGastosFiltrados, color: 'rose', icon: 'trending_down' },
+                                    { label: 'Pagos Tarjetas', value: totalPagosFiltrados, color: 'blue', icon: 'credit_card' },
+                                    { label: 'Balance', value: totalFiltrado, color: totalFiltrado >= 0 ? 'emerald' : 'rose', icon: totalFiltrado >= 0 ? 'account_balance_wallet' : 'warning' },
                                 ].map(({ label, value, color, icon }) => (
                                     <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm">
                                         <div className="flex items-center gap-2 mb-1">
@@ -1641,9 +1650,15 @@ function App() {
 
                 {/* ============ REPORTES ============ */}
                 {activeTab === 'reportes' && (() => {
+                    // Calcular ingresos y gastos reales (excluyendo pagos a tarjetas porque ya están en la deuda)
                     const totalIngresos = transactions.filter(t => t.type === 'ingreso').reduce((a, t) => a + parseFloat(t.amount), 0);
-                    const totalGastos = transactions.filter(t => t.type === 'gasto').reduce((a, t) => a + parseFloat(t.amount), 0);
-                    const savingsRate = totalIngresos > 0 ? ((totalIngresos - totalGastos) / totalIngresos) * 100 : 0;
+                    const totalGastosReales = transactions.filter(t => t.type === 'gasto').reduce((a, t) => a + parseFloat(t.amount), 0);
+                    const totalPagosTarjetas = transactions.filter(t => t.type === 'pago_tarjeta').reduce((a, t) => a + parseFloat(t.amount), 0);
+
+                    // Tasa de ahorro = (Ingresos - Gastos Reales) / Ingresos * 100
+                    // Los pagos a tarjetas no son ahorro, son reducción de deuda
+                    const ahorroReal = totalIngresos - totalGastosReales;
+                    const savingsRate = totalIngresos > 0 ? (ahorroReal / totalIngresos) * 100 : 0;
 
                     // Group by store for Top 5
                     const storeTotals = {};
@@ -1704,7 +1719,10 @@ function App() {
                                         </div>
                                     </div>
                                     <p className="text-xs text-center text-slate-500 mt-2">
-                                        Has ahorrado <span className="text-emerald-500 font-bold">${(totalIngresos - totalGastos).toLocaleString()}</span> de tus ingresos totales.
+                                        Tu ahorro es de <span className="text-emerald-500 font-bold">${ahorroReal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span> sobre ingresos de <span className="text-slate-600 dark:text-slate-400 font-bold">${totalIngresos.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>.
+                                        {totalPagosTarjetas > 0 && (
+                                            <span className="block mt-1">Incluye ${totalPagosTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })} en pagos a tarjetas.</span>
+                                        )}
                                     </p>
                                 </motion.div>
 
