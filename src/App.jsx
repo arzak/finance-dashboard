@@ -174,7 +174,10 @@ function AddCreditCardModal({ isOpen, onClose, onAddCard }) {
         onAddCard({
             name,
             lastFour,
+            limit: parseFloat(limit) || 0,
             límite: parseFloat(limit) || 0,
+            initialDebt: 0,
+            payments: 0,
             balance: 0,
             themeColor
         });
@@ -253,7 +256,9 @@ function PaymentModal({ isOpen, onClose, card, onPayment, spentPerCard }) {
     const initialDebt = card?.initialDebt || 0;
     const payments = card?.payments || 0;
     const spentByTx = card ? (spentPerCard[card.name] || 0) : 0;
-    const totalDebt = initialDebt + spentByTx - payments;
+    const manualAdjustment = card?.manualAdjustment || 0;
+    const totalGastosMes = spentByTx + manualAdjustment;
+    const totalDebt = initialDebt + totalGastosMes - payments;
 
     return (
         <AnimatePresence>
@@ -278,8 +283,16 @@ function PaymentModal({ isOpen, onClose, card, onPayment, spentPerCard }) {
                                 </div>
                                 <div className="flex justify-between text-xs">
                                     <span className="text-slate-500">Gastos del mes:</span>
-                                    <span className="font-semibold text-rose-500">−${spentByTx.toFixed(2)}</span>
+                                    <span className="font-semibold text-rose-500">−${totalGastosMes.toFixed(2)}</span>
                                 </div>
+                                {manualAdjustment !== 0 && (
+                                    <div className="flex justify-between text-xs">
+                                        <span className="text-slate-500">Ajuste manual:</span>
+                                        <span className={`font-semibold ${manualAdjustment > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                            {manualAdjustment > 0 ? '+' : ''}${manualAdjustment.toFixed(2)}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-xs">
                                     <span className="text-slate-500">Pagos realizados:</span>
                                     <span className="font-semibold text-emerald-500">+${payments.toFixed(2)}</span>
@@ -323,6 +336,8 @@ function EditCreditCardModal({ isOpen, onClose, card, onSave }) {
     const [lastFour, setLastFour] = useState("");
     const [limit, setLimit] = useState("");
     const [initialDebt, setInitialDebt] = useState("");
+    const [payments, setPayments] = useState("");
+    const [manualAdjustment, setManualAdjustment] = useState("");
     const [themeColor, setThemeColor] = useState("blue");
 
     useEffect(() => {
@@ -330,8 +345,11 @@ function EditCreditCardModal({ isOpen, onClose, card, onSave }) {
             setName(card.name || "");
             setLastFour(card.lastFour || "");
             setLimit(card.limit || card.límite || "");
-            setInitialDebt(card.initialDebt || 0);
+            setInitialDebt(card.initialDebt !== undefined && card.initialDebt !== null ? String(card.initialDebt) : "0");
+            setPayments(card.payments !== undefined && card.payments !== null ? String(card.payments) : "0");
+            setManualAdjustment(card.manualAdjustment !== undefined && card.manualAdjustment !== null ? String(card.manualAdjustment) : "0");
             setThemeColor(card.themeColor || "blue");
+            console.log('EditCardModal - Card cargada:', card);
         }
     }, [card]);
 
@@ -339,13 +357,18 @@ function EditCreditCardModal({ isOpen, onClose, card, onSave }) {
         e.preventDefault();
         if (!name || !lastFour) return;
 
-        onSave({
+        const dataToSend = {
             name,
             lastFour,
             limit: parseFloat(limit) || 0,
             initialDebt: parseFloat(initialDebt) || 0,
+            payments: parseFloat(payments) || 0,
+            manualAdjustment: parseFloat(manualAdjustment) || 0,
             themeColor
-        });
+        };
+        console.log('EditCardModal - Enviando datos:', dataToSend);
+
+        onSave(dataToSend);
 
         onClose();
     };
@@ -384,6 +407,20 @@ function EditCreditCardModal({ isOpen, onClose, card, onSave }) {
                                     <span className="block text-xs text-slate-500 font-normal mt-0.5">Deuda acumulada de meses anteriores</span>
                                 </label>
                                 <input type="number" step="0.01" value={initialDebt} onChange={(e) => setInitialDebt(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Pagos Realizados ($)
+                                    <span className="block text-xs text-slate-500 font-normal mt-0.5">Total de pagos realizados en el mes</span>
+                                </label>
+                                <input type="number" step="0.01" value={payments} onChange={(e) => setPayments(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Ajuste Manual de Gastos ($)
+                                    <span className="block text-xs text-slate-500 font-normal mt-0.5">Valor positivo para agregar, negativo para restar (ej: -50.00)</span>
+                                </label>
+                                <input type="number" step="0.01" value={manualAdjustment} onChange={(e) => setManualAdjustment(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="0.00" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Color de Tarjeta</label>
@@ -430,6 +467,10 @@ function App() {
     // Payment modal
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [cardToPay, setCardToPay] = useState(null);
+    // Clear transactions modal
+    const [isClearTxModalOpen, setIsClearTxModalOpen] = useState(false);
+    // Delete single transaction modal
+    const [txToDelete, setTxToDelete] = useState(null);
 
     // --- Migration: assign orphaned docs to oldtees@mail.com on first login ---
     useEffect(() => {
@@ -439,6 +480,32 @@ function App() {
             migrateOrphanedDocs(currentUser.uid).catch(console.error);
         }
     }, [currentUser]);
+
+    // Migrate cards with missing fields
+    useEffect(() => {
+        if (!db || !currentUser || creditCards.length === 0) return;
+
+        const migrateCards = async () => {
+            const { doc, updateDoc } = await import("firebase/firestore");
+            for (const card of creditCards) {
+                if (card.initialDebt === undefined || card.payments === undefined || card.manualAdjustment === undefined) {
+                    try {
+                        const cardRef = doc(db, "creditCards", card.id);
+                        await updateDoc(cardRef, {
+                            initialDebt: card.initialDebt || 0,
+                            payments: card.payments || 0,
+                            manualAdjustment: card.manualAdjustment || 0,
+                            limit: card.limit || card.límite || 0,
+                            límite: card.limit || card.límite || 0
+                        });
+                    } catch (e) {
+                        console.error("Error migrating card:", e);
+                    }
+                }
+            }
+        };
+        migrateCards();
+    }, [creditCards, currentUser, db]);
 
     useEffect(() => {
         if (!db || !currentUser) return;
@@ -533,12 +600,44 @@ function App() {
         }
     };
 
-    const handleUpdateCard = async (cardId, updatedData) => {
+    const handleResetCardMonth = async (card) => {
         if (!db || !currentUser) return;
+        const spentByTx = spentPerCard[card.name] || 0;
+        const manualAdj = card.manualAdjustment || 0;
+        const currentDebt = (card.initialDebt || 0) + spentByTx + manualAdj - (card.payments || 0);
+        const newInitialDebt = Math.max(0, currentDebt);
+
         try {
             const { doc, updateDoc } = await import("firebase/firestore");
-            const cardRef = doc(db, "creditCards", cardId);
-            await updateDoc(cardRef, updatedData);
+            const cardRef = doc(db, "creditCards", card.id);
+            await updateDoc(cardRef, {
+                initialDebt: newInitialDebt,
+                payments: 0,
+                manualAdjustment: 0
+            });
+        } catch (error) {
+            console.error("Error resetting card month:", error);
+        }
+    };
+
+    const handleUpdateCard = async (updatedData) => {
+        if (!db || !currentUser || !cardToEdit) return;
+        try {
+            const { doc, updateDoc } = await import("firebase/firestore");
+            const cardRef = doc(db, "creditCards", cardToEdit.id);
+            const dataToSave = {
+                name: updatedData.name,
+                lastFour: updatedData.lastFour,
+                limit: parseFloat(updatedData.limit) || 0,
+                límite: parseFloat(updatedData.limit) || 0,
+                initialDebt: parseFloat(updatedData.initialDebt) || 0,
+                payments: parseFloat(updatedData.payments) || 0,
+                manualAdjustment: parseFloat(updatedData.manualAdjustment) || 0,
+                themeColor: updatedData.themeColor
+            };
+            console.log('Actualizando tarjeta:', cardToEdit.id, dataToSave);
+            await updateDoc(cardRef, dataToSave);
+            console.log('✅ Tarjeta actualizada correctamente');
         } catch (error) {
             console.error("Error updating card:", error);
         }
@@ -572,6 +671,38 @@ function App() {
         }
     };
 
+    const handleClearAllTransactions = async () => {
+        if (!db || !currentUser) return;
+        try {
+            const { getDocs, query, where, deleteDoc } = await import("firebase/firestore");
+            const q = query(
+                collection(db, "transactions"),
+                where("userId", "==", currentUser.uid)
+            );
+            const snapshot = await getDocs(q);
+
+            const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+            await Promise.all(deletePromises);
+
+            console.log(`✅ Se eliminaron ${snapshot.size} transacciones`);
+            setIsClearTxModalOpen(false);
+        } catch (error) {
+            console.error("❌ Error eliminando transacciones:", error);
+        }
+    };
+
+    const handleDeleteTransaction = async (txId) => {
+        if (!db || !currentUser) return;
+        try {
+            const { deleteDoc, doc } = await import("firebase/firestore");
+            await deleteDoc(doc(db, "transactions", txId));
+            console.log(`✅ Transacción eliminada`);
+            setTxToDelete(null);
+        } catch (error) {
+            console.error("❌ Error eliminando transacción:", error);
+        }
+    };
+
     // Gasto real por tarjeta (basado en transacciones)
     const spentPerCard = {};
     transactions.forEach(tx => {
@@ -583,18 +714,45 @@ function App() {
     const totalIngresos = transactions.reduce((acc, tx) => tx.type === 'ingreso' ? acc + parseFloat(tx.amount) : acc, 0);
     const totalGastos = transactions.reduce((acc, tx) => tx.type === 'gasto' ? acc + parseFloat(tx.amount) : acc, 0);
     const totalPagosTarjetas = transactions.reduce((acc, tx) => tx.type === 'pago_tarjeta' ? acc + parseFloat(tx.amount) : acc, 0);
-    const totalAvailable = totalIngresos - totalGastos - totalPagosTarjetas;
 
     // Calcular deuda total de todas las tarjetas
     const totalDeudaTarjetas = creditCards.reduce((acc, card) => {
         const initialDebt = card.initialDebt || 0;
         const payments = card.payments || 0;
         const spentByTx = spentPerCard[card.name] || 0;
-        return acc + (initialDebt + spentByTx - payments);
+        const manualAdjustment = card.manualAdjustment || 0;
+        return acc + Math.max(0, initialDebt + spentByTx + manualAdjustment - payments);
     }, 0);
 
-    // Balance real considerando deudas de tarjetas
-    const realBalance = totalIngresos - totalGastos - totalDeudaTarjetas;
+    // Balance 1: Efectivo disponible (lo que tienes AHORA en efectivo/banco)
+    // = Ingresos - Gastos reales (excluyendo pagos a tarjetas porque ese dinero ya salió)
+    const gastosSinPagosTarjetas = totalGastos - totalPagosTarjetas;
+    const efectivoDisponible = totalIngresos - gastosSinPagosTarjetas;
+
+    // Balance 2: Patrimonio neto real (tu situación financiera completa)
+    // = Efectivo disponible - Deuda de tarjetas (lo que realmente te queda si pagaras todo)
+    const patrimonioNeto = efectivoDisponible - totalDeudaTarjetas;
+
+    // Semáforo de salud financiera
+    // Verde: Patrimonio positivo y deuda < 30% de ingresos
+    // Amarillo: Patrimonio positivo pero deuda 30-50%, o patrimonio ligeramente negativo
+    // Rojo: Patrimonio negativo y deuda > 50% de ingresos
+    const deudaPorcentaje = totalIngresos > 0 ? (totalDeudaTarjetas / totalIngresos) * 100 : 0;
+    const patrimonioPositivo = patrimonioNeto >= 0;
+
+    let saludFinancieraColor = 'emerald'; // Verde por defecto
+    let saludFinancieraLabel = 'Saludable';
+    let saludFinancieraIcon = 'account_balance';
+
+    if (!patrimonioPositivo && deudaPorcentaje > 50) {
+        saludFinancieraColor = 'rose'; // Rojo - Peligro
+        saludFinancieraLabel = 'Peligro';
+        saludFinancieraIcon = 'warning';
+    } else if (!patrimonioPositivo || deudaPorcentaje > 30) {
+        saludFinancieraColor = 'amber'; // Amarillo - Precaución
+        saludFinancieraLabel = 'Precaución';
+        saludFinancieraIcon = 'report_problem';
+    }
 
     // Colores para las tarjetas (para evitar clases dinámicas de Tailwind)
     const cardColors = {
@@ -770,22 +928,97 @@ function App() {
                         <div className="col-span-12 lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm flex flex-col justify-between">
                             <div>
                                 <div className="flex justify-between items-start mb-4">
-                                    <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-xs">Fondos Totales Disponibles</span>
+                                    <div>
+                                        <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-xs block">Efectivo Disponible</span>
+                                        <span className="text-[10px] text-slate-400">Lo que tienes AHORA en efectivo/banco</span>
+                                    </div>
                                     {(() => {
-                                        const isPositive = totalAvailable >= 0;
+                                        const isPositive = efectivoDisponible >= 0;
                                         const pctLabel = totalIngresos > 0
-                                            ? ((totalAvailable / totalIngresos) * 100).toFixed(1)
+                                            ? ((efectivoDisponible / totalIngresos) * 100).toFixed(1)
                                             : '0.0';
                                         return (
                                             <span className={`flex items-center gap-1 font-semibold text-sm px-2 py-0.5 rounded ${isPositive ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
                                                 <span className="material-symbols-outlined text-xs">{isPositive ? 'trending_up' : 'trending_down'}</span>
-                                                {isPositive ? '+' : ''}{pctLabel}% disponible
+                                                {isPositive ? '+' : ''}{pctLabel}% de ingresos
                                             </span>
                                         );
                                     })()}
                                 </div>
-                                <div className="text-5xl font-black tracking-tighter mb-8 text-slate-900 dark:text-white leading-none">
-                                    ${totalAvailable.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                <div className="text-5xl font-black tracking-tighter mb-4 text-emerald-600 dark:text-emerald-400 leading-none">
+                                    ${efectivoDisponible.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+
+                                <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-xs block">Patrimonio Neto</span>
+                                            <span className="text-[10px] text-slate-400">Tu situación real (restando deuda de tarjetas)</span>
+                                        </div>
+                                        <span className={`flex items-center gap-1 font-semibold text-sm px-2 py-0.5 rounded ${saludFinancieraColor === 'emerald' ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30' :
+                                            saludFinancieraColor === 'amber' ? 'text-amber-700 bg-amber-100 dark:bg-amber-900/30' :
+                                                'text-rose-700 bg-rose-100 dark:bg-rose-900/30'
+                                            }`}>
+                                            <span className={`material-symbols-outlined text-xs ${saludFinancieraColor === 'emerald' ? 'text-emerald-600' :
+                                                saludFinancieraColor === 'amber' ? 'text-amber-600' :
+                                                    'text-rose-600'
+                                                }`}>{saludFinancieraIcon}</span>
+                                            {saludFinancieraLabel}
+                                        </span>
+                                    </div>
+                                    <div className={`text-3xl font-black tracking-tighter leading-none ${patrimonioNeto >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'
+                                        }`}>
+                                        ${patrimonioNeto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                    {/* Indicador de porcentaje de deuda */}
+                                    <div className="mt-3 flex items-center gap-2">
+                                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full transition-all ${deudaPorcentaje <= 30 ? 'bg-emerald-500' :
+                                                    deudaPorcentaje <= 50 ? 'bg-amber-500' :
+                                                        'bg-rose-500'
+                                                    }`}
+                                                style={{ width: `${Math.min(deudaPorcentaje, 100)}%` }}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
+                                            {deudaPorcentaje.toFixed(1)}% deuda/ingresos
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 mt-4">
+                                    {totalDeudaTarjetas > 0 && (
+                                        <div className="flex items-center justify-between text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-base">credit_card</span>
+                                                <span>Deuda de tarjetas</span>
+                                            </div>
+                                            <strong>−${totalDeudaTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg">
+                                        <span className="material-symbols-outlined text-base">info</span>
+                                        <span>
+                                            Neto = Efectivo (${efectivoDisponible.toLocaleString()}) − Deuda tarjetas (${totalDeudaTarjetas.toLocaleString()})
+                                        </span>
+                                    </div>
+                                    {/* Leyenda del semáforo */}
+                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/30 px-3 py-2 rounded-lg mt-2">
+                                        <span className="material-symbols-outlined text-xs">traffic</span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="size-2 rounded-full bg-emerald-500"></span>
+                                            &lt;30% deuda
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="size-2 rounded-full bg-amber-500"></span>
+                                            30-50%
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="size-2 rounded-full bg-rose-500"></span>
+                                            &gt;50% peligro
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             {/* Gráfica de gastos totales por mes */}
@@ -842,7 +1075,9 @@ function App() {
                                         const spentByTx = spentPerCard[card.name] || 0;
                                         const initialDebt = card.initialDebt || 0;
                                         const payments = card.payments || 0;
-                                        const totalDebt = initialDebt + spentByTx - payments;
+                                        const manualAdjustment = card.manualAdjustment || 0;
+                                        const totalGastosMes = spentByTx + manualAdjustment;
+                                        const totalDebt = initialDebt + totalGastosMes - payments;
                                         const cardLimit = card.limit || card.límite || 0;
                                         const percentUsed = cardLimit > 0 ? Math.min((totalDebt / cardLimit) * 100, 100) : 0;
                                         const colors = cardColors[card.themeColor] || cardColors.blue;
@@ -877,6 +1112,13 @@ function App() {
                                                             <span className="material-symbols-outlined text-sm">money</span>
                                                         </button>
                                                         <button
+                                                            onClick={(e) => { e.stopPropagation(); handleResetCardMonth(card); }}
+                                                            className="size-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-all flex-shrink-0"
+                                                            title="Reiniciar mes - Pasar deuda actual a inicial y poner pagos en 0"
+                                                        >
+                                                            <span className="material-symbols-outlined text-sm">autorenew</span>
+                                                        </button>
+                                                        <button
                                                             onClick={(e) => { e.stopPropagation(); setCardToEdit(card); setIsEditCardModalOpen(true); }}
                                                             className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0"
                                                             title="Editar tarjeta"
@@ -892,7 +1134,12 @@ function App() {
                                                     </div>
                                                     <div className="bg-rose-50 dark:bg-rose-900/10 rounded-lg p-2 text-center">
                                                         <p className="text-[9px] text-rose-500 uppercase font-bold">Gastos mes</p>
-                                                        <p className="text-xs font-semibold text-rose-500">${spentByTx.toFixed(2)}</p>
+                                                        <p className="text-xs font-semibold text-rose-500">${totalGastosMes.toFixed(2)}</p>
+                                                        {manualAdjustment !== 0 && (
+                                                            <p className={`text-[8px] font-medium ${manualAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                {manualAdjustment > 0 ? '+' : ''}{manualAdjustment.toFixed(2)} ajuste
+                                                            </p>
+                                                        )}
                                                     </div>
                                                     <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2 text-center">
                                                         <p className="text-[9px] text-emerald-500 uppercase font-bold">Pagos</p>
@@ -1261,14 +1508,24 @@ function App() {
                                     <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {filtered.length} transacción{filtered.length !== 1 ? 'es' : ''}
                                     </span>
-                                    <button
-                                        onClick={exportarCSV}
-                                        disabled={filtered.length === 0}
-                                        className="text-primary text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
-                                    >
-                                        <span className="material-symbols-outlined text-sm">download</span>
-                                        Exportar CSV ({filtered.length})
-                                    </button>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setIsClearTxModalOpen(true)}
+                                            disabled={filtered.length === 0}
+                                            className="text-rose-500 text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">delete</span>
+                                            Eliminar todo
+                                        </button>
+                                        <button
+                                            onClick={exportarCSV}
+                                            disabled={filtered.length === 0}
+                                            className="text-primary text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">download</span>
+                                            Exportar CSV ({filtered.length})
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {filtered.length === 0 ? (
@@ -1314,13 +1571,22 @@ function App() {
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="text-right flex-shrink-0 ml-4">
-                                                                <p className={`font-bold text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                                                    {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                                </p>
-                                                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tx.type === 'gasto' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500'}`}>
-                                                                    {tx.type === 'gasto' ? 'Gasto' : 'Ingreso'}
-                                                                </span>
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="text-right flex-shrink-0">
+                                                                    <p className={`font-bold text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                                        {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                                    </p>
+                                                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tx.type === 'gasto' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500'}`}>
+                                                                        {tx.type === 'gasto' ? 'Gasto' : 'Ingreso'}
+                                                                    </span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => setTxToDelete(tx)}
+                                                                    className="size-8 rounded-full bg-rose-100 dark:bg-rose-900/20 flex items-center justify-center text-rose-600 hover:bg-rose-200 dark:hover:bg-rose-900/30 transition-all"
+                                                                    title="Eliminar transacción"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-sm">delete</span>
+                                                                </button>
                                                             </div>
                                                         </motion.div>
                                                     );
@@ -1590,6 +1856,126 @@ function App() {
                 spentPerCard={spentPerCard}
                 onPayment={handleAddPayment}
             />
+            {/* Clear Transactions Confirmation Modal */}
+            <AnimatePresence>
+                {isClearTxModalOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsClearTxModalOpen(false)}
+                            className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl z-50 border border-slate-200 dark:border-slate-800"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Eliminar Transacciones</h2>
+                                <button onClick={() => setIsClearTxModalOpen(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="size-12 rounded-full bg-rose-100 dark:bg-rose-900/20 flex items-center justify-center text-rose-600">
+                                        <span className="material-symbols-outlined text-2xl">warning</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-900 dark:text-white">¿Estás seguro?</p>
+                                        <p className="text-sm text-slate-500">Esta acción no se puede deshacer</p>
+                                    </div>
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">
+                                    Se eliminarán <strong className="text-slate-900 dark:text-white">{transactions.length}</strong> transacciones permanentemente.
+                                    Las tarjetas y sus ajustes manuales se mantendrán.
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setIsClearTxModalOpen(false)}
+                                    className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold py-3 rounded-xl transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleClearAllTransactions}
+                                    className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-lg shadow-rose-500/30"
+                                >
+                                    Sí, eliminar todo
+                                </button>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Single Transaction Modal */}
+            <AnimatePresence>
+                {txToDelete && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setTxToDelete(null)}
+                            className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-40"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-2xl z-50 border border-slate-200 dark:border-slate-800"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Eliminar Transacción</h2>
+                                <button onClick={() => setTxToDelete(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-500">
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+
+                            <div className="mb-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="size-12 rounded-full bg-rose-100 dark:bg-rose-900/20 flex items-center justify-center text-rose-600">
+                                        <span className="material-symbols-outlined text-2xl">delete</span>
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-900 dark:text-white">¿Eliminar esta transacción?</p>
+                                        <p className="text-sm text-slate-500">Esta acción no se puede deshacer</p>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
+                                    <p className="font-bold text-slate-900 dark:text-white mb-1">{txToDelete.store}</p>
+                                    <p className="text-sm text-slate-500 mb-2">{txToDelete.category} • {txToDelete.date}</p>
+                                    <p className={`text-lg font-black ${txToDelete.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                        {txToDelete.type === 'gasto' ? '-' : '+'}${parseFloat(txToDelete.amount).toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setTxToDelete(null)}
+                                    className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold py-3 rounded-xl transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={() => handleDeleteTransaction(txToDelete.id)}
+                                    className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 rounded-xl transition-colors shadow-lg shadow-rose-500/30"
+                                >
+                                    Sí, eliminar
+                                </button>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
