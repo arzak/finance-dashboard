@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "dineros-c0629"
+  },
   "targets": {},
   "etags": {}
 }
