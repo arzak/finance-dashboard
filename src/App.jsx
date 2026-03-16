@@ -4,6 +4,8 @@ import { db } from "./firebase";
 import { useAuth } from "./AuthContext";
 import { migrateOrphanedDocs } from "./migrate";
 import { collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, where } from "firebase/firestore";
+import { jsPDF } from "jspdf";
+import { autoTable } from "jspdf-autotable";
 
 const INITIAL_TRANSACTIONS = [
     { id: '1', store: "Applee Store", category: "Tecnología", type: "gasto", paymentMethod: "Visa Gold", amount: 14.99, date: "Hoy", icon: "shopping_bag", iconColor: "blue" },
@@ -703,6 +705,321 @@ function App() {
         }
     };
 
+    const downloadPDF = async () => {
+        try {
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Header
+            doc.setFillColor(19, 90, 236);
+            doc.rect(0, 0, pageWidth, 25, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.setFont('helvetica', 'bold');
+            doc.text('ESTADO DE CUENTA', pageWidth / 2, 12, { align: 'center' });
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            const today = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+            doc.text(`Fecha de emisión: ${today}`, pageWidth / 2, 19, { align: 'center' });
+
+            // User info
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(9);
+            doc.text(`Usuario: ${currentUser?.email || 'N/A'}`, 14, 32);
+
+            let yPos = 40;
+
+            // RESUMEN FINANCIERO
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, yPos - 5, pageWidth - 28, 8, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('RESUMEN FINANCIERO', 18, yPos);
+
+            yPos += 10;
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+
+            // Calculate totals
+            const gastosSinPagosTarjetas = totalGastos - totalPagosTarjetas;
+            const efectivoDisponible = totalIngresos - gastosSinPagosTarjetas;
+            const patrimonioNeto = efectivoDisponible - totalDeudaTarjetas;
+
+            const summaryData = [
+                ['Total Ingresos', `$${totalIngresos.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Total Gastos', `$${totalGastos.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Pagos a Tarjetas', `$${totalPagosTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Efectivo Disponible', `$${efectivoDisponible.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Deuda Total Tarjetas', `-$${totalDeudaTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+                ['Patrimonio Neto', `$${patrimonioNeto.toLocaleString('en-US', { minimumFractionDigits: 2 })}`],
+            ];
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Concepto', 'Monto']],
+                body: summaryData,
+                theme: 'striped',
+                headStyles: { fillColor: [19, 90, 236], textColor: 255, font: 'helvetica', fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: 14, right: 14 },
+                columnStyles: {
+                    0: { cellWidth: 'auto', font: 'helvetica', fontStyle: 'normal' },
+                    1: { cellWidth: 50, halign: 'right', font: 'helvetica', fontStyle: 'bold' }
+                }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 15;
+
+            // TARJETAS DE CRÉDITO
+            if (creditCards.length > 0) {
+                // Check if we need a new page
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.setFillColor(240, 240, 240);
+                doc.rect(14, yPos - 5, pageWidth - 28, 8, 'F');
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('TARJETAS DE CRÉDITO', 18, yPos);
+
+                yPos += 10;
+
+                const cardsData = creditCards.map(card => {
+                    const spentByTx = spentPerCard[card.name] || 0;
+                    const initialDebt = card.initialDebt || 0;
+                    const payments = card.payments || 0;
+                    const manualAdjustment = card.manualAdjustment || 0;
+                    const totalGastosMes = spentByTx + manualAdjustment;
+                    const totalDebt = initialDebt + totalGastosMes - payments;
+                    const cardLimit = card.limit || card.límite || 0;
+                    const percentUsed = cardLimit > 0 ? Math.min((totalDebt / cardLimit) * 100, 100) : 0;
+
+                    return [
+                        `${card.name} (****${card.lastFour})`,
+                        `$${initialDebt.toFixed(2)}`,
+                        `$${totalGastosMes.toFixed(2)}`,
+                        `$${payments.toFixed(2)}`,
+                        `-$${totalDebt.toFixed(2)}`,
+                        `$${cardLimit.toLocaleString('en-US', { minimumFractionDigits: 0 })}`,
+                        `${percentUsed.toFixed(0)}%`
+                    ];
+                });
+
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['Tarjeta', 'Deuda Inicial', 'Gastos Mes', 'Pagos', 'Deuda Total', 'Límite', 'Uso']],
+                    body: cardsData,
+                    theme: 'striped',
+                    headStyles: { fillColor: [19, 90, 236], textColor: 255, font: 'helvetica', fontStyle: 'bold', fontSize: 8 },
+                    alternateRowStyles: { fillColor: [245, 245, 245] },
+                    margin: { left: 14, right: 14 },
+                    tableWidth: pageWidth - 28,
+                    columnStyles: {
+                        0: { cellWidth: 50, font: 'helvetica' },
+                        1: { cellWidth: 25, halign: 'right', font: 'helvetica' },
+                        2: { cellWidth: 25, halign: 'right', font: 'helvetica' },
+                        3: { cellWidth: 20, halign: 'right', font: 'helvetica' },
+                        4: { cellWidth: 25, halign: 'right', font: 'helvetica', fontStyle: 'bold' },
+                        5: { cellWidth: 25, halign: 'right', font: 'helvetica' },
+                        6: { cellWidth: 20, halign: 'right', font: 'helvetica' }
+                    },
+                    fontSize: 8
+                });
+
+                yPos = doc.lastAutoTable.finalY + 15;
+            }
+
+            // TRANSACCIONES
+            // Check if we need a new page
+            if (yPos > 180) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, yPos - 5, pageWidth - 28, 8, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('TRANSACCIONES', 18, yPos);
+
+            yPos += 10;
+
+            const transactionsData = transactions.map(tx => {
+                const txDate = tx.createdAt && typeof tx.createdAt.toDate === 'function'
+                    ? tx.createdAt.toDate().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    : tx.date || '';
+
+                const amount = tx.type === 'gasto'
+                    ? `-$${parseFloat(tx.amount).toFixed(2)}`
+                    : `+$${parseFloat(tx.amount).toFixed(2)}`;
+
+                return [
+                    txDate,
+                    tx.store,
+                    tx.category,
+                    tx.paymentMethod || '-',
+                    tx.type === 'gasto' ? 'Gasto' : 'Ingreso',
+                    amount
+                ];
+            });
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Fecha', 'Descripción', 'Categoría', 'Método', 'Tipo', 'Monto']],
+                body: transactionsData,
+                theme: 'striped',
+                headStyles: { fillColor: [19, 90, 236], textColor: 255, font: 'helvetica', fontStyle: 'bold', fontSize: 8 },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: 14, right: 14 },
+                tableWidth: pageWidth - 28,
+                columnStyles: {
+                    0: { cellWidth: 20, fontSize: 7, font: 'helvetica' },
+                    1: { cellWidth: 'auto', fontSize: 8, font: 'helvetica' },
+                    2: { cellWidth: 25, fontSize: 7, font: 'helvetica' },
+                    3: { cellWidth: 30, fontSize: 7, font: 'helvetica' },
+                    4: { cellWidth: 18, halign: 'center', fontSize: 7, font: 'helvetica' },
+                    5: {
+                        cellWidth: 25, halign: 'right', fontSize: 8, font: 'helvetica'
+                    }
+                },
+                styles: { overflow: 'linebreak' },
+                didParseCell: (data) => {
+                    if (data.section === 'body' && data.column.index === 5) {
+                        if (data.cell.raw.startsWith('-')) {
+                            data.cell.styles.textColor = [244, 63, 94];
+                            data.cell.styles.fontStyle = 'bold';
+                        } else {
+                            data.cell.styles.textColor = [16, 185, 129];
+                        }
+                    }
+                }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 15;
+
+            // GASTOS POR CATEGORÍA
+            // Check if we need a new page
+            if (yPos > 200) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, yPos - 5, pageWidth - 28, 8, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('GASTOS POR CATEGORÍA', 18, yPos);
+
+            yPos += 10;
+
+            // Calculate category totals
+            const categoryTotals = {};
+            let totalGastado = 0;
+            transactions.forEach(tx => {
+                if (tx.type === 'gasto') {
+                    const amount = parseFloat(tx.amount);
+                    categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + amount;
+                    totalGastado += amount;
+                }
+            });
+
+            const categoryData = Object.entries(categoryTotals)
+                .sort(([, a], [, b]) => b - a)
+                .map(([category, total]) => {
+                    const percent = totalGastado > 0 ? (total / totalGastado) * 100 : 0;
+                    return [category, `$${total.toFixed(2)}`, `${percent.toFixed(1)}%`];
+                });
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Categoría', 'Total', 'Porcentaje']],
+                body: categoryData,
+                theme: 'striped',
+                headStyles: { fillColor: [19, 90, 236], textColor: 255, font: 'helvetica', fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: 14, right: 14 },
+                columnStyles: {
+                    0: { cellWidth: 'auto', font: 'helvetica' },
+                    1: { cellWidth: 50, halign: 'right', font: 'helvetica' },
+                    2: { cellWidth: 30, halign: 'right', font: 'helvetica' }
+                }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 15;
+
+            // TOP 5 LUGARES DE GASTO
+            // Check if we need a new page
+            if (yPos > 200) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            doc.setFillColor(240, 240, 240);
+            doc.rect(14, yPos - 5, pageWidth - 28, 8, 'F');
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.text('TOP 5 LUGARES DE GASTO', 18, yPos);
+
+            yPos += 10;
+
+            // Group by store
+            const storeTotals = {};
+            transactions.filter(t => t.type === 'gasto').forEach(tx => {
+                storeTotals[tx.store] = (storeTotals[tx.store] || 0) + parseFloat(tx.amount);
+            });
+
+            const topStores = Object.entries(storeTotals)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+
+            const storesData = topStores.map(([store, total], index) => [
+                `#${index + 1}`,
+                store,
+                `$${total.toFixed(2)}`
+            ]);
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['#', 'Lugar', 'Total Gastado']],
+                body: storesData,
+                theme: 'striped',
+                headStyles: { fillColor: [19, 90, 236], textColor: 255, font: 'helvetica', fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { left: 14, right: 14 },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center', font: 'helvetica' },
+                    1: { cellWidth: 'auto', font: 'helvetica' },
+                    2: { cellWidth: 50, halign: 'right', font: 'helvetica' }
+                }
+            });
+
+            // Footer
+            const finalY = doc.lastAutoTable.finalY + 20;
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.setFont('helvetica', 'italic');
+            doc.text('Este es un documento generado automáticamente.', pageWidth / 2, finalY, { align: 'center' });
+            doc.text('Finance Pro - Sistema de Control Financiero', pageWidth / 2, finalY + 4, { align: 'center' });
+
+            // Save PDF
+            const fileName = `estado_cuenta_${new Date().toISOString().slice(0, 10)}.pdf`;
+            doc.save(fileName);
+
+            console.log('✅ PDF generado exitosamente');
+        } catch (error) {
+            console.error('❌ Error generando PDF:', error);
+        }
+    };
+
     // Gasto real por tarjeta (basado en transacciones)
     const spentPerCard = {};
     transactions.forEach(tx => {
@@ -1254,7 +1571,10 @@ function App() {
                         <div className="col-span-12 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
                             <div className="flex justify-between items-center mb-4 md:mb-6">
                                 <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">Recent Transacciones</h3>
-                                <button className="hidden md:block text-primary text-sm font-semibold hover:underline">Descargar Estado de Cuenta</button>
+                                <button onClick={downloadPDF} className="hidden md:block text-primary text-sm font-semibold hover:underline flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">download</span>
+                                    Descargar Estado de Cuenta
+                                </button>
                             </div>
 
                             {/* List Container */}
@@ -1525,6 +1845,14 @@ function App() {
                                         >
                                             <span className="material-symbols-outlined text-sm">delete</span>
                                             Eliminar todo
+                                        </button>
+                                        <button
+                                            onClick={downloadPDF}
+                                            disabled={filtered.length === 0}
+                                            className="text-primary text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                            <span className="hidden sm:inline">PDF</span>
                                         </button>
                                         <button
                                             onClick={exportarCSV}
