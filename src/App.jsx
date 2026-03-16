@@ -1819,7 +1819,7 @@ function App() {
                                     { label: 'Ingresos', value: totalIngresosFiltrados, color: 'emerald', icon: 'trending_up' },
                                     { label: 'Gastos', value: totalGastosFiltrados, color: 'rose', icon: 'trending_down' },
                                     { label: 'Pagos', value: totalPagosFiltrados, color: 'blue', icon: 'credit_card' },
-                                    { label: 'Balance', value: totalFiltrado, color: totalFiltrado >= 0 ? 'emerald' : 'rose', icon: totalFiltrado >= 0 ? 'account_balance_wallet' : 'warning' },
+                                    { label: 'Balance Total (Flujo de Caja)', value: totalFiltrado, color: totalFiltrado >= 0 ? 'emerald' : 'rose', icon: totalFiltrado >= 0 ? 'account_balance_wallet' : 'warning' },
                                 ].map(({ label, value, color, icon }) => (
                                     <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl p-3 md:p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm flex-shrink-0 w-32 md:w-auto">
                                         <div className="flex items-center gap-1 md:gap-2 mb-1">
