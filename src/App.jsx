@@ -899,15 +899,15 @@ function App() {
             {/* Main Content */}
             <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark scrollbar-hide pb-20 md:pb-0 relative">
                 <header className="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 md:px-8 py-4 md:py-6 flex justify-between items-center border-b border-transparent md:border-b-0">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-lg md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
                             {activeTab === 'panel' ? 'Panel de Control' : activeTab === 'transacciones' ? 'Transacciones' : 'Reportes Financieros'}
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">
-                            {activeTab === 'panel' ? 'Monitoreo de crédito en tiempo real y salud financiera.' : activeTab === 'transacciones' ? 'Historial completo de movimientos.' : 'Análisis detallado de tus hábitos de consumo.'}
+                        <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm truncate">
+                            {activeTab === 'panel' ? 'Monitoreo de crédito en tiempo real.' : activeTab === 'transacciones' ? 'Historial completo de movimientos.' : 'Análisis detallado de tus hábitos de consumo.'}
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
@@ -922,57 +922,57 @@ function App() {
 
                 {/* ============ PANEL ============ */}
                 {activeTab === 'panel' && (
-                    <div className="px-8 pb-12 grid grid-cols-12 gap-6 auto-rows-min mt-4">
+                    <div className="px-4 md:px-8 pb-12 grid grid-cols-12 gap-4 md:gap-6 auto-rows-min mt-4">
 
                         {/* Main Stat Card */}
-                        <div className="col-span-12 lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm flex flex-col justify-between">
+                        <div className="col-span-12 lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm flex flex-col justify-between">
                             <div>
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-xs block">Efectivo Disponible</span>
-                                        <span className="text-[10px] text-slate-400">Lo que tienes AHORA en efectivo/banco</span>
+                                <div className="flex justify-between items-start mb-3 md:mb-4">
+                                    <div className="min-w-0 flex-1">
+                                        <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[10px] md:text-xs block">Efectivo Disponible</span>
+                                        <span className="hidden md:block text-[9px] text-slate-400">Lo que tienes AHORA en efectivo/banco</span>
                                     </div>
                                     {(() => {
                                         const isPositive = efectivoDisponible >= 0;
-                                        // Limitar porcentaje entre -100% y 100% para visualización
                                         const rawPct = totalIngresos > 0 ? ((efectivoDisponible / totalIngresos) * 100) : 0;
                                         const pctLabel = Math.max(-100, Math.min(100, rawPct)).toFixed(1);
                                         return (
-                                            <span className={`flex items-center gap-1 font-semibold text-sm px-2 py-0.5 rounded ${isPositive ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
-                                                <span className="material-symbols-outlined text-xs">{isPositive ? 'trending_up' : 'trending_down'}</span>
-                                                {isPositive ? '+' : ''}{pctLabel}% de ingresos
+                                            <span className={`flex items-center gap-1 font-semibold text-[10px] md:text-sm px-2 py-0.5 rounded whitespace-nowrap ${isPositive ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
+                                                <span className="material-symbols-outlined text-[10px] md:text-xs">{isPositive ? 'trending_up' : 'trending_down'}</span>
+                                                <span className="hidden xs:inline">{isPositive ? '+' : ''}{pctLabel}% ingresos</span>
+                                                <span className="xs:hidden">{isPositive ? '+' : ''}{pctLabel}%</span>
                                             </span>
                                         );
                                     })()}
                                 </div>
-                                <div className="text-5xl font-black tracking-tighter mb-4 text-emerald-600 dark:text-emerald-400 leading-none">
+                                <div className="text-3xl md:text-5xl font-black tracking-tighter mb-3 md:mb-4 text-emerald-600 dark:text-emerald-400 leading-none truncate">
                                     ${efectivoDisponible.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </div>
 
-                                <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div>
-                                            <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-xs block">Patrimonio Neto</span>
-                                            <span className="text-[10px] text-slate-400">Tu situación real (restando deuda de tarjetas)</span>
+                                <div className="border-t border-slate-200 dark:border-slate-700 pt-3 md:pt-4 mt-3 md:mt-4">
+                                    <div className="flex justify-between items-start mb-2 md:mb-3">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider text-[10px] md:text-xs block">Patrimonio Neto</span>
+                                            <span className="hidden md:block text-[9px] text-slate-400">Tu situación real (restando deuda)</span>
                                         </div>
-                                        <span className={`flex items-center gap-1 font-semibold text-sm px-2 py-0.5 rounded ${saludFinancieraColor === 'emerald' ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30' :
+                                        <span className={`flex items-center gap-1 font-semibold text-[10px] md:text-sm px-2 py-0.5 rounded whitespace-nowrap ${saludFinancieraColor === 'emerald' ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30' :
                                             saludFinancieraColor === 'amber' ? 'text-amber-700 bg-amber-100 dark:bg-amber-900/30' :
                                                 'text-rose-700 bg-rose-100 dark:bg-rose-900/30'
                                             }`}>
-                                            <span className={`material-symbols-outlined text-xs ${saludFinancieraColor === 'emerald' ? 'text-emerald-600' :
+                                            <span className={`material-symbols-outlined text-[10px] md:text-xs ${saludFinancieraColor === 'emerald' ? 'text-emerald-600' :
                                                 saludFinancieraColor === 'amber' ? 'text-amber-600' :
                                                     'text-rose-600'
                                                 }`}>{saludFinancieraIcon}</span>
-                                            {saludFinancieraLabel}
+                                            <span className="hidden sm:inline">{saludFinancieraLabel}</span>
                                         </span>
                                     </div>
-                                    <div className={`text-3xl font-black tracking-tighter leading-none ${patrimonioNeto >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'
+                                    <div className={`text-2xl md:text-3xl font-black tracking-tighter leading-none truncate ${patrimonioNeto >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'
                                         }`}>
                                         ${patrimonioNeto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </div>
                                     {/* Indicador de porcentaje de deuda */}
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                    <div className="mt-2 md:mt-3 flex items-center gap-2">
+                                        <div className="flex-1 bg-slate-200 dark:bg-slate-700 h-1.5 md:h-2 rounded-full overflow-hidden">
                                             <div
                                                 className={`h-full rounded-full transition-all ${deudaPorcentaje <= 30 ? 'bg-emerald-500' :
                                                     deudaPorcentaje <= 50 ? 'bg-amber-500' :
@@ -981,34 +981,34 @@ function App() {
                                                 style={{ width: `${Math.min(deudaPorcentaje, 100)}%` }}
                                             />
                                         </div>
-                                        <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
-                                            {deudaPorcentaje.toFixed(1)}% deuda/ingresos
+                                        <span className="text-[9px] md:text-xs font-semibold text-slate-500 whitespace-nowrap">
+                                            {deudaPorcentaje.toFixed(0)}%
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2 mt-4">
+                                <div className="space-y-2 mt-3 md:mt-4">
                                     {totalDeudaTarjetas > 0 && (
-                                        <div className="flex items-center justify-between text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-3 py-2 rounded-lg">
-                                            <div className="flex items-center gap-2">
-                                                <span className="material-symbols-outlined text-base">credit_card</span>
-                                                <span>Deuda de tarjetas</span>
+                                        <div className="flex items-center justify-between text-xs md:text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 px-2 md:px-3 py-2 rounded-lg">
+                                            <div className="flex items-center gap-1 md:gap-2 min-w-0">
+                                                <span className="material-symbols-outlined text-sm md:text-base flex-shrink-0">credit_card</span>
+                                                <span className="truncate">Deuda tarjetas</span>
                                             </div>
-                                            <strong>−${totalDeudaTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
+                                            <strong className="whitespace-nowrap text-xs md:text-sm">−${totalDeudaTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong>
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg">
+                                    <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 rounded-lg">
                                         <span className="material-symbols-outlined text-base">info</span>
                                         <span>
                                             Neto = Efectivo (${efectivoDisponible.toLocaleString()}) − Deuda tarjetas (${totalDeudaTarjetas.toLocaleString()})
                                         </span>
                                     </div>
-                                    {/* Leyenda del semáforo */}
-                                    <div className="flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/30 px-3 py-2 rounded-lg mt-2">
+                                    {/* Leyenda del semáforo - oculta en móvil */}
+                                    <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400 bg-slate-50 dark:bg-slate-800/30 px-3 py-2 rounded-lg mt-2">
                                         <span className="material-symbols-outlined text-xs">traffic</span>
                                         <span className="flex items-center gap-1">
                                             <span className="size-2 rounded-full bg-emerald-500"></span>
-                                            &lt;30% deuda
+                                            &lt;30%
                                         </span>
                                         <span className="flex items-center gap-1">
                                             <span className="size-2 rounded-full bg-amber-500"></span>
@@ -1016,23 +1016,19 @@ function App() {
                                         </span>
                                         <span className="flex items-center gap-1">
                                             <span className="size-2 rounded-full bg-rose-500"></span>
-                                            &gt;50% peligro
+                                            &gt;50%
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             {/* Gráfica de gastos totales por mes */}
-                            <div className="h-32 w-full mt-4 relative">
-                                <div className="flex items-end justify-between h-24 gap-2 px-1">
+                            <div className="h-24 md:h-32 w-full mt-3 md:mt-4 relative">
+                                <div className="flex items-end justify-between h-16 md:h-24 gap-1 md:gap-2 px-1">
                                     {monthlyTotals.map((d, i) => {
                                         const h = (d.gastos / maxMonthlyGasto) * 100;
                                         const isCurrent = i === monthlyTotals.length - 1;
                                         return (
                                             <div key={i} className="flex-1 flex flex-col items-center gap-0 group relative">
-                                                {/* Tooltip */}
-                                                <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                                    ${d.gastos.toFixed(0)}
-                                                </div>
                                                 <div className="w-full h-full flex items-end">
                                                     <motion.div
                                                         initial={{ height: 0 }}
@@ -1050,9 +1046,9 @@ function App() {
                                     })}
                                 </div>
                                 {/* Labels de meses */}
-                                <div className="flex justify-between mt-2 px-1">
+                                <div className="flex justify-between mt-1 md:mt-2 px-1">
                                     {monthlyTotals.map((d, i) => (
-                                        <span key={i} className={`flex-1 text-center text-[10px] font-bold uppercase ${i === monthlyTotals.length - 1 ? 'text-primary' : 'text-slate-400'
+                                        <span key={i} className={`flex-1 text-center text-[8px] md:text-[10px] font-bold uppercase ${i === monthlyTotals.length - 1 ? 'text-primary' : 'text-slate-400'
                                             }`}>{d.label}</span>
                                     ))}
                                 </div>
@@ -1060,16 +1056,16 @@ function App() {
                         </div>
 
                         {/* Cards usage */}
-                        <div className="col-span-12 lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Uso de Tarjetas</h3>
+                        <div className="col-span-12 lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm">
+                            <div className="flex justify-between items-center mb-4 md:mb-6">
+                                <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">Uso de Tarjetas</h3>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setIsCardModalOpen(true)} className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" title="Agregar tarjeta">
-                                        <span className="material-symbols-outlined text-xl">add</span>
+                                    <button onClick={() => setIsCardModalOpen(true)} className="size-7 md:size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all" title="Agregar tarjeta">
+                                        <span className="material-symbols-outlined text-lg md:text-xl">add</span>
                                     </button>
                                 </div>
                             </div>
-                            <div className="space-y-5">
+                            <div className="space-y-3 md:space-y-5">
                                 <AnimatePresence>
                                     {creditCards.map((card) => {
                                         const spentByTx = spentPerCard[card.name] || 0;
@@ -1087,77 +1083,80 @@ function App() {
                                                 key={card.id}
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
-                                                className="space-y-3 p-3 rounded-xl transition-all border"
+                                                className="space-y-2 md:space-y-3 p-2 md:p-3 rounded-xl transition-all border"
                                                 style={{
                                                     borderColor: isSelected ? colors.border : 'transparent',
                                                     backgroundColor: isSelected ? colors.bg : 'transparent',
                                                 }}
                                             >
                                                 <div className="flex justify-between items-start gap-2">
-                                                    <div className="flex items-center gap-3 flex-1" onClick={() => setSelectedCardId(card.id)}>
-                                                        <div className="size-8 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.bg, color: colors.text }}>
-                                                            <span className="material-symbols-outlined text-lg">credit_score</span>
+                                                    <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0" onClick={() => setSelectedCardId(card.id)}>
+                                                        <div className="size-7 md:size-8 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: colors.bg, color: colors.text }}>
+                                                            <span className="material-symbols-outlined text-base md:text-lg">credit_score</span>
                                                         </div>
-                                                        <div className="min-w-0">
-                                                            <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{card.name}</p>
-                                                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">**** {card.lastFour}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="font-bold text-xs md:text-sm text-slate-900 dark:text-slate-100 truncate">{card.name}</p>
+                                                            <p className="text-[9px] md:text-[10px] text-slate-500 uppercase font-bold tracking-tight">**** {card.lastFour}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex gap-1">
+                                                    <div className="flex gap-1 flex-shrink-0">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setCardToPay(card); setIsPaymentModalOpen(true); }}
-                                                            className="size-8 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 hover:bg-emerald-200 dark:hover:bg-emerald-900/30 transition-all flex-shrink-0"
+                                                            className="size-7 md:size-8 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 hover:bg-emerald-200 dark:hover:bg-emerald-900/30 transition-all flex-shrink-0"
                                                             title="Registrar pago"
                                                         >
                                                             <span className="material-symbols-outlined text-sm">money</span>
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleResetCardMonth(card); }}
-                                                            className="size-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-all flex-shrink-0"
-                                                            title="Reiniciar mes - Pasar deuda actual a inicial y poner pagos en 0"
+                                                            className="hidden sm:flex size-7 md:size-8 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-all flex-shrink-0"
+                                                            title="Reiniciar mes"
                                                         >
                                                             <span className="material-symbols-outlined text-sm">autorenew</span>
                                                         </button>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setCardToEdit(card); setIsEditCardModalOpen(true); }}
-                                                            className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0"
+                                                            className="size-7 md:size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex-shrink-0"
                                                             title="Editar tarjeta"
                                                         >
                                                             <span className="material-symbols-outlined text-sm">edit</span>
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-2 text-center">
-                                                        <p className="text-[9px] text-slate-500 uppercase font-bold">Deuda inicial</p>
-                                                        <p className="text-xs font-semibold text-slate-600">${initialDebt.toFixed(2)}</p>
+                                                <div className="grid grid-cols-3 gap-1 md:gap-2">
+                                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-1 md:p-2 text-center">
+                                                        <p className="hidden md:block text-[9px] text-slate-500 uppercase font-bold">Deuda inicial</p>
+                                                        <p className="md:hidden text-[8px] text-slate-500 uppercase font-bold">Inicial</p>
+                                                        <p className="text-[10px] md:text-xs font-semibold text-slate-600">${initialDebt.toFixed(2)}</p>
                                                     </div>
-                                                    <div className="bg-rose-50 dark:bg-rose-900/10 rounded-lg p-2 text-center">
-                                                        <p className="text-[9px] text-rose-500 uppercase font-bold">Gastos mes</p>
-                                                        <p className="text-xs font-semibold text-rose-500">${totalGastosMes.toFixed(2)}</p>
+                                                    <div className="bg-rose-50 dark:bg-rose-900/10 rounded-lg p-1 md:p-2 text-center">
+                                                        <p className="hidden md:block text-[9px] text-rose-500 uppercase font-bold">Gastos mes</p>
+                                                        <p className="md:hidden text-[8px] text-rose-500 uppercase font-bold">Gastos</p>
+                                                        <p className="text-[10px] md:text-xs font-semibold text-rose-500 truncate">${totalGastosMes.toFixed(2)}</p>
                                                         {manualAdjustment !== 0 && (
-                                                            <p className={`text-[8px] font-medium ${manualAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                                                                {manualAdjustment > 0 ? '+' : ''}{manualAdjustment.toFixed(2)} ajuste
+                                                            <p className={`hidden md:block text-[7px] font-medium ${manualAdjustment > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                                                {manualAdjustment > 0 ? '+' : ''}{manualAdjustment.toFixed(2)}
                                                             </p>
                                                         )}
                                                     </div>
-                                                    <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2 text-center">
-                                                        <p className="text-[9px] text-emerald-500 uppercase font-bold">Pagos</p>
-                                                        <p className="text-xs font-semibold text-emerald-500">${payments.toFixed(2)}</p>
+                                                    <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-1 md:p-2 text-center">
+                                                        <p className="hidden md:block text-[9px] text-emerald-500 uppercase font-bold">Pagos</p>
+                                                        <p className="md:hidden text-[8px] text-emerald-500 uppercase font-bold">Pagos</p>
+                                                        <p className="text-[10px] md:text-xs font-semibold text-emerald-500">${payments.toFixed(2)}</p>
                                                     </div>
                                                 </div>
-                                                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
-                                                    <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-xs font-bold text-slate-600">Deuda Total</span>
-                                                        <span className="text-lg font-black text-rose-500">−${totalDebt.toFixed(2)}</span>
+                                                <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-2 md:p-3">
+                                                    <div className="flex justify-between items-center mb-1 md:mb-2">
+                                                        <span className="text-[10px] md:text-xs font-bold text-slate-600">Deuda Total</span>
+                                                        <span className="text-base md:text-lg font-black text-rose-500 truncate ml-2">−${totalDebt.toFixed(2)}</span>
                                                     </div>
-                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 md:h-2 rounded-full overflow-hidden">
                                                         <div
                                                             className="h-full rounded-full transition-all"
                                                             style={{ width: `${percentUsed}%`, backgroundColor: colors.bar }}
                                                         ></div>
                                                     </div>
-                                                    <p className="text-[9px] text-slate-500 text-right mt-1">{percentUsed.toFixed(0)}% del límite (${cardLimit.toLocaleString()})</p>
+                                                    <p className="text-[8px] md:text-[9px] text-slate-500 text-right mt-0.5 md:mt-1 truncate">{percentUsed.toFixed(0)}% de ${cardLimit.toLocaleString()}</p>
                                                 </div>
                                             </motion.div>
                                         )
@@ -1165,41 +1164,41 @@ function App() {
                                 </AnimatePresence>
                             </div>
                             {creditCards.length === 0 && (
-                                <div className="py-8 text-center">
-                                    <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 block mb-2">credit_card</span>
-                                    <p className="text-slate-500 dark:text-slate-400 text-sm">No hay tarjetas registradas</p>
-                                    <p className="text-slate-400 dark:text-slate-600 text-xs mt-1">Agrega una tarjeta para comenzar</p>
+                                <div className="py-6 md:py-8 text-center">
+                                    <span className="material-symbols-outlined text-3xl md:text-4xl text-slate-300 dark:text-slate-700 block mb-2">credit_card</span>
+                                    <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">No hay tarjetas registradas</p>
+                                    <p className="text-slate-400 dark:text-slate-600 text-[10px] md:text-xs mt-1">Agrega una tarjeta para comenzar</p>
                                 </div>
                             )}
                             {activeCard && (
-                                <p className="text-[10px] text-slate-400 mt-3 text-center">
+                                <p className="hidden md:block text-[10px] text-slate-400 mt-3 text-center">
                                     Toca una tarjeta para ver su historial en la gráfica ↑
                                 </p>
                             )}
                         </div>
 
                         {/* Tendencias de Gastos */}
-                        <div className="col-span-12 lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
-                            <div className="flex justify-between items-center mb-8">
-                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Tendencias de Gastos</h3>
-                                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                        <div className="col-span-12 lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
+                            <div className="flex justify-between items-center mb-4 md:mb-8">
+                                <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">Tendencias de Gastos</h3>
+                                <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
                                     <button className="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white">Semanal</button>
                                     <button className="px-3 py-1 text-xs font-semibold rounded text-slate-500">Mensual</button>
                                 </div>
                             </div>
-                            <div className="flex items-end justify-between h-48 gap-4 pb-6">
+                            <div className="flex items-end justify-between h-36 md:h-48 gap-1 md:gap-4 pb-4 md:pb-6 overflow-x-auto">
                                 {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
                                     const heightPercent = (dayTotals[day] / maxDayTotal) * 100;
-                                    const isMax = dayTotals[day] === maxDayTotal && maxDayTotal > 100; // Highlight highest if there's real data
+                                    const isMax = dayTotals[day] === maxDayTotal && maxDayTotal > 100;
                                     return (
-                                        <div key={day} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative h-full">
+                                        <div key={day} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative h-full min-w-[30px] md:min-w-[40px]">
                                             <motion.div
                                                 initial={{ height: 0 }}
                                                 animate={{ height: `${heightPercent}%` }}
                                                 transition={{ duration: 1, ease: "easeOut" }}
                                                 className={`absolute bottom-0 w-full ${isMax ? 'bg-primary' : 'bg-primary/20'} rounded-t-lg`}
                                             />
-                                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] uppercase font-bold text-slate-400">{day}</div>
+                                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] md:text-[10px] uppercase font-bold text-slate-400 whitespace-nowrap">{day}</div>
                                         </div>
                                     )
                                 })}
@@ -1207,10 +1206,10 @@ function App() {
                         </div>
 
                         {/* Gasto Profile */}
-                        <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
-                            <h3 className="font-bold text-lg mb-8 text-slate-900 dark:text-white">Gasto Profile</h3>
+                        <div className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
+                            <h3 className="font-bold text-base md:text-lg mb-4 md:mb-8 text-slate-900 dark:text-white text-center">Gasto Profile</h3>
                             <div className="flex flex-col items-center">
-                                <div className="relative size-40">
+                                <div className="relative size-32 md:size-40">
                                     <svg className="w-full h-full rotate-[-90deg]" viewBox="0 0 36 36">
                                         <circle className="text-slate-100 dark:text-slate-800" cx="18" cy="18" fill="none" r="16" stroke="currentColor" strokeWidth="3"></circle>
                                         {chartData.map((data, index) => (
@@ -1231,17 +1230,17 @@ function App() {
                                         ))}
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-xl font-bold text-slate-900 dark:text-white">
+                                        <span className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
                                             ${totalGastado >= 1000 ? (totalGastado / 1000).toFixed(1) + 'k' : totalGastado.toFixed(0)}
                                         </span>
-                                        <span className="text-[8px] uppercase text-slate-500 font-bold tracking-widest">Gastado</span>
+                                        <span className="hidden md:block text-[8px] uppercase text-slate-500 font-bold tracking-widest">Gastado</span>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4 w-full mt-8">
+                                <div className="grid grid-cols-2 gap-2 md:gap-4 w-full mt-4 md:mt-8">
                                     {chartData.filter(d => d.amount > 0).map((data, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            <div className="size-2 rounded-full" style={{ backgroundColor: data.color }}></div>
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">{data.name}</span>
+                                        <div key={index} className="flex items-center gap-1 md:gap-2">
+                                            <div className="size-2 rounded-full flex-shrink-0" style={{ backgroundColor: data.color }}></div>
+                                            <span className="text-[9px] md:text-xs text-slate-500 dark:text-slate-400 truncate">{data.name}</span>
                                         </div>
                                     ))}
                                     {totalGastado === 0 && (
@@ -1252,14 +1251,14 @@ function App() {
                         </div>
 
                         {/* Recent Transacciones List */}
-                        <div className="col-span-12 bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-lg text-slate-900 dark:text-white">Recent Transacciones</h3>
-                                <button className="text-primary text-sm font-semibold hover:underline">Descargar Estado de Cuenta</button>
+                        <div className="col-span-12 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-8 border border-slate-100 dark:border-slate-800/50 shadow-sm">
+                            <div className="flex justify-between items-center mb-4 md:mb-6">
+                                <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">Recent Transacciones</h3>
+                                <button className="hidden md:block text-primary text-sm font-semibold hover:underline">Descargar Estado de Cuenta</button>
                             </div>
 
                             {/* List Container */}
-                            <div className="space-y-3">
+                            <div className="space-y-2 md:space-y-3">
                                 <AnimatePresence>
                                     {transactions
                                         .slice(recentPage * RECENT_PER_PAGE, (recentPage + 1) * RECENT_PER_PAGE)
@@ -1269,18 +1268,19 @@ function App() {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, scale: 0.9 }}
-                                                className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-slate-100 dark:border-slate-800/50"
+                                                className="flex items-center justify-between p-2 md:p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-slate-100 dark:border-slate-800/50"
                                             >
-                                                <div className="flex items-center gap-4">
-                                                    <div className={`size-10 rounded-full bg-${tx.iconColor}-100 dark:bg-${tx.iconColor}-500/10 text-${tx.iconColor}-600 flex items-center justify-center flex-shrink-0`}>
-                                                        <span className="material-symbols-outlined text-xl">{tx.icon}</span>
+                                                <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+                                                    <div className={`size-8 md:size-10 rounded-full bg-${tx.iconColor}-100 dark:bg-${tx.iconColor}-500/10 text-${tx.iconColor}-600 flex items-center justify-center flex-shrink-0`}>
+                                                        <span className="material-symbols-outlined text-base md:text-xl">{tx.icon}</span>
                                                     </div>
-                                                    <div className="min-w-0">
-                                                        <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{tx.store}</p>
-                                                        <p className="text-xs text-slate-500 truncate">{tx.category} • {tx.paymentMethod ? `${tx.paymentMethod} • ` : ''}{tx.date}</p>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-bold text-xs md:text-sm text-slate-900 dark:text-slate-100 truncate">{tx.store}</p>
+                                                        <p className="hidden md:block text-xs text-slate-500 truncate">{tx.category} • {tx.paymentMethod ? `${tx.paymentMethod} • ` : ''}{tx.date}</p>
+                                                        <p className="md:hidden text-[9px] text-slate-500 truncate">{tx.category} • {tx.date}</p>
                                                     </div>
                                                 </div>
-                                                <p className={`font-bold text-sm flex-shrink-0 ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                <p className={`font-bold text-xs md:text-sm flex-shrink-0 ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'} ml-2`}>
                                                     {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toFixed(2)}
                                                 </p>
                                             </motion.div>
@@ -1288,24 +1288,24 @@ function App() {
                                 </AnimatePresence>
 
                                 {transactions.length === 0 && (
-                                    <div className="py-12 text-center">
-                                        <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-700 block mb-2">receipt_long</span>
-                                        <p className="text-slate-500 dark:text-slate-400 text-sm">No hay transacciones recientes</p>
+                                    <div className="py-8 md:py-12 text-center">
+                                        <span className="material-symbols-outlined text-3xl md:text-4xl text-slate-300 dark:text-slate-700 block mb-2">receipt_long</span>
+                                        <p className="text-slate-500 dark:text-slate-400 text-xs md:text-sm">No hay transacciones recientes</p>
                                     </div>
                                 )}
                             </div>
 
                             {/* Paginación */}
                             {transactions.length > RECENT_PER_PAGE && (
-                                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-6">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        Página {recentPage + 1} de {Math.ceil(transactions.length / RECENT_PER_PAGE)} • Mostrando {Math.min(transactions.length - recentPage * RECENT_PER_PAGE, RECENT_PER_PAGE)} de {transactions.length} transacciones
+                                <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-4 md:mt-6 gap-2">
+                                    <p className="hidden md:block text-xs text-slate-500 dark:text-slate-400">
+                                        Página {recentPage + 1} de {Math.ceil(transactions.length / RECENT_PER_PAGE)}
                                     </p>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1 md:gap-2">
                                         <button
                                             onClick={() => setRecentPage(p => Math.max(0, p - 1))}
                                             disabled={recentPage === 0}
-                                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                            className="px-2 md:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs md:text-sm font-medium"
                                         >
                                             Anterior
                                         </button>
@@ -1314,7 +1314,7 @@ function App() {
                                                 <button
                                                     key={i}
                                                     onClick={() => setRecentPage(i)}
-                                                    className={`w-8 h-8 rounded-lg transition-all text-sm font-medium ${i === recentPage
+                                                    className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all text-xs md:text-sm font-medium ${i === recentPage
                                                         ? 'bg-primary text-white shadow-md shadow-primary/30'
                                                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                                         }`}
@@ -1326,7 +1326,7 @@ function App() {
                                         <button
                                             onClick={() => setRecentPage(p => Math.min(Math.ceil(transactions.length / RECENT_PER_PAGE) - 1, p + 1))}
                                             disabled={recentPage >= Math.ceil(transactions.length / RECENT_PER_PAGE) - 1}
-                                            className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                            className="px-2 md:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs md:text-sm font-medium"
                                         >
                                             Siguiente
                                         </button>
@@ -1335,10 +1335,10 @@ function App() {
                             )}
 
                             {/* View All Link */}
-                            <div className="text-center mt-4">
+                            <div className="text-center mt-3 md:mt-4">
                                 <button
                                     onClick={() => setActiveTab('transacciones')}
-                                    className="text-primary text-sm font-semibold hover:underline flex items-center justify-center gap-1 mx-auto"
+                                    className="text-primary text-xs md:text-sm font-semibold hover:underline flex items-center justify-center gap-1 mx-auto"
                                 >
                                     Ver todas las transacciones
                                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -1437,18 +1437,18 @@ function App() {
                     };
 
                     return (
-                        <div className="px-8 pb-12 mt-4 space-y-6">
+                        <div className="px-4 md:px-8 pb-12 mt-4 space-y-4 md:space-y-6">
 
                             {/* Buscador + Filtros */}
-                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm">
+                            <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm">
                                 <div className="relative mb-4">
                                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
                                     <input
                                         type="text"
-                                        placeholder="Buscar por tienda, categoría o método de pago..."
+                                        placeholder="Buscar transacción..."
                                         value={txSearch}
                                         onChange={e => setTxSearch(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        className="w-full pl-10 pr-8 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     />
                                     {txSearch && (
                                         <button onClick={() => setTxSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -1457,27 +1457,27 @@ function App() {
                                     )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-3">
-                                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                                <div className="flex flex-wrap gap-2 md:gap-3">
+                                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 overflow-x-auto">
                                         {[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos']].map(([val, label]) => (
                                             <button key={val} onClick={() => setTxFilterType(val)}
-                                                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${txFilterType === val ? 'bg-white dark:bg-slate-700 shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>
+                                                className={`px-2 md:px-3 py-1 text-[10px] md:text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${txFilterType === val ? 'bg-white dark:bg-slate-700 shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>
                                                 {label}
                                             </button>
                                         ))}
                                     </div>
 
                                     <select value={txFilterCategory} onChange={e => setTxFilterCategory(e.target.value)}
-                                        className="px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 border-0 rounded-lg text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/50">
-                                        <option value="todas">Todas las categorías</option>
+                                        className="px-2 md:px-3 py-1.5 text-[10px] md:text-xs font-semibold bg-slate-100 dark:bg-slate-800 border-0 rounded-lg text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                        <option value="todas">Todas</option>
                                         {allCategories.filter(c => c !== 'todas').map(c => (
                                             <option key={c} value={c}>{c}</option>
                                         ))}
                                     </select>
 
                                     <select value={txFilterMonth} onChange={e => setTxFilterMonth(e.target.value)}
-                                        className="px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 border-0 rounded-lg text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/50">
-                                        <option value="todos">Todos los meses</option>
+                                        className="px-2 md:px-3 py-1.5 text-[10px] md:text-xs font-semibold bg-slate-100 dark:bg-slate-800 border-0 rounded-lg text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/50">
+                                        <option value="todos">Todos</option>
                                         {allMonths.filter(m => m !== 'todos').map(m => {
                                             const [yr, mo] = m.split('-');
                                             return <option key={m} value={m}>{MONTHS_LABEL[parseInt(mo) - 1]} {yr}</option>;
@@ -1486,42 +1486,42 @@ function App() {
 
                                     {(txSearch || txFilterType !== 'todos' || txFilterCategory !== 'todas' || txFilterMonth !== 'todos') && (
                                         <button onClick={() => { setTxSearch(''); setTxFilterType('todos'); setTxFilterCategory('todas'); setTxFilterMonth('todos'); }}
-                                            className="px-3 py-1.5 text-xs font-semibold text-rose-500 bg-rose-50 dark:bg-rose-900/20 rounded-lg hover:bg-rose-100 transition-colors">
-                                            Limpiar filtros
+                                            className="px-2 md:px-3 py-1.5 text-[10px] md:text-xs font-semibold text-rose-500 bg-rose-50 dark:bg-rose-900/20 rounded-lg hover:bg-rose-100 transition-colors whitespace-nowrap">
+                                            Limpiar
                                         </button>
                                     )}
                                 </div>
                             </div>
 
-                            {/* Resumen rápido */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {/* Resumen rápido - horizontal scroll en móvil */}
+                            <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:gap-4">
                                 {[
-                                    { label: 'Total Ingresos', value: totalIngresosFiltrados, color: 'emerald', icon: 'trending_up' },
-                                    { label: 'Total Gastos', value: totalGastosFiltrados, color: 'rose', icon: 'trending_down' },
-                                    { label: 'Pagos Tarjetas', value: totalPagosFiltrados, color: 'blue', icon: 'credit_card' },
+                                    { label: 'Ingresos', value: totalIngresosFiltrados, color: 'emerald', icon: 'trending_up' },
+                                    { label: 'Gastos', value: totalGastosFiltrados, color: 'rose', icon: 'trending_down' },
+                                    { label: 'Pagos', value: totalPagosFiltrados, color: 'blue', icon: 'credit_card' },
                                     { label: 'Balance', value: totalFiltrado, color: totalFiltrado >= 0 ? 'emerald' : 'rose', icon: totalFiltrado >= 0 ? 'account_balance_wallet' : 'warning' },
                                 ].map(({ label, value, color, icon }) => (
-                                    <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className={`material-symbols-outlined text-${color}-500 text-lg`}>{icon}</span>
-                                            <span className="text-xs text-slate-500 font-medium">{label}</span>
+                                    <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl p-3 md:p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm flex-shrink-0 w-32 md:w-auto">
+                                        <div className="flex items-center gap-1 md:gap-2 mb-1">
+                                            <span className={`material-symbols-outlined text-${color}-500 text-base md:text-lg`}>{icon}</span>
+                                            <span className="text-[10px] md:text-xs text-slate-500 font-medium whitespace-nowrap">{label}</span>
                                         </div>
-                                        <p className={`text-xl font-black text-${color}-500`}>${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                        <p className={`text-base md:text-xl font-black text-${color}-500 truncate`}>${Math.abs(value).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                 ))}
                             </div>
 
                             {/* Lista */}
                             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/50 shadow-sm overflow-hidden">
-                                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                <div className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                    <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300">
                                         {filtered.length} transacción{filtered.length !== 1 ? 'es' : ''}
                                     </span>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 md:gap-3">
                                         <button
                                             onClick={() => setIsClearTxModalOpen(true)}
                                             disabled={filtered.length === 0}
-                                            className="text-rose-500 text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+                                            className="hidden md:flex text-rose-500 text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                                         >
                                             <span className="material-symbols-outlined text-sm">delete</span>
                                             Eliminar todo
@@ -1532,16 +1532,16 @@ function App() {
                                             className="text-primary text-xs font-semibold hover:underline flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
                                         >
                                             <span className="material-symbols-outlined text-sm">download</span>
-                                            Exportar CSV ({filtered.length})
+                                            <span className="hidden sm:inline">CSV</span> ({filtered.length})
                                         </button>
                                     </div>
                                 </div>
 
                                 {filtered.length === 0 ? (
-                                    <div className="py-20 text-center">
-                                        <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-700 block mb-3">receipt_long</span>
-                                        <p className="text-slate-500 dark:text-slate-400 font-medium">No se encontraron transacciones</p>
-                                        <p className="text-slate-400 dark:text-slate-600 text-sm mt-1">Intenta ajustar los filtros o el buscador</p>
+                                    <div className="py-16 md:py-20 text-center">
+                                        <span className="material-symbols-outlined text-4xl md:text-5xl text-slate-300 dark:text-slate-700 block mb-3">receipt_long</span>
+                                        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base">No se encontraron transacciones</p>
+                                        <p className="text-slate-400 dark:text-slate-600 text-xs md:text-sm mt-1">Intenta ajustar los filtros</p>
                                     </div>
                                 ) : (
                                     <>
@@ -1561,37 +1561,37 @@ function App() {
                                                             animate={{ opacity: 1, y: 0 }}
                                                             exit={{ opacity: 0 }}
                                                             transition={{ duration: 0.2, delay: idx * 0.02 }}
-                                                            className="flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                                                            className="flex items-center justify-between px-3 md:px-6 py-3 md:py-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
                                                         >
-                                                            <div className="flex items-center gap-4">
-                                                                <div className={`size-11 rounded-full bg-${tx.iconColor || 'slate'}-100 dark:bg-${tx.iconColor || 'slate'}-500/10 text-${tx.iconColor || 'slate'}-600 flex items-center justify-center flex-shrink-0`}>
-                                                                    <span className="material-symbols-outlined text-xl">{tx.icon || 'receipt'}</span>
+                                                            <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+                                                                <div className={`size-9 md:size-11 rounded-full bg-${tx.iconColor || 'slate'}-100 dark:bg-${tx.iconColor || 'slate'}-500/10 text-${tx.iconColor || 'slate'}-600 flex items-center justify-center flex-shrink-0`}>
+                                                                    <span className="material-symbols-outlined text-base md:text-xl">{tx.icon || 'receipt'}</span>
                                                                 </div>
-                                                                <div>
-                                                                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">{tx.store}</p>
-                                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                                        <span className="text-[11px] text-slate-400">{tx.category}</span>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className="font-bold text-xs md:text-sm text-slate-900 dark:text-slate-100 truncate">{tx.store}</p>
+                                                                    <div className="flex items-center gap-1 md:gap-2 mt-0.5 flex-wrap">
+                                                                        <span className="text-[9px] md:text-[11px] text-slate-400">{tx.category}</span>
                                                                         {tx.paymentMethod && <>
                                                                             <span className="text-slate-300 dark:text-slate-700">•</span>
-                                                                            <span className="text-[11px] text-slate-400">{tx.paymentMethod}</span>
+                                                                            <span className="text-[9px] md:text-[11px] text-slate-400 truncate max-w-[80px] md:max-w-none">{tx.paymentMethod}</span>
                                                                         </>}
-                                                                        <span className="text-slate-300 dark:text-slate-700">•</span>
-                                                                        <span className="text-[11px] text-slate-400">{dateLabel}</span>
+                                                                        <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+                                                                        <span className="text-[9px] md:text-[11px] text-slate-400">{dateLabel}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div className="flex items-center gap-4">
-                                                                <div className="text-right flex-shrink-0">
-                                                                    <p className={`font-bold text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                                            <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                                                                <div className="text-right">
+                                                                    <p className={`font-bold text-xs md:text-sm ${tx.type === 'gasto' ? 'text-rose-500' : 'text-emerald-500'} truncate max-w-[80px] md:max-w-none`}>
                                                                         {tx.type === 'gasto' ? '-' : '+'}${parseFloat(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                                     </p>
-                                                                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${tx.type === 'gasto' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500'}`}>
+                                                                    <span className={`hidden sm:inline text-[9px] md:text-[10px] font-semibold px-2 py-0.5 rounded-full ${tx.type === 'gasto' ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-500' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500'}`}>
                                                                         {tx.type === 'gasto' ? 'Gasto' : 'Ingreso'}
                                                                     </span>
                                                                 </div>
                                                                 <button
                                                                     onClick={() => setTxToDelete(tx)}
-                                                                    className="size-8 rounded-full bg-rose-100 dark:bg-rose-900/20 flex items-center justify-center text-rose-600 hover:bg-rose-200 dark:hover:bg-rose-900/30 transition-all"
+                                                                    className="size-7 md:size-8 rounded-full bg-rose-100 dark:bg-rose-900/20 flex items-center justify-center text-rose-600 hover:bg-rose-200 dark:hover:bg-rose-900/30 transition-all flex-shrink-0"
                                                                     title="Eliminar transacción"
                                                                 >
                                                                     <span className="material-symbols-outlined text-sm">delete</span>
@@ -1605,15 +1605,15 @@ function App() {
 
                                         {/* Paginación */}
                                         {totalPages > 1 && (
-                                            <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                    Página {currentPage + 1} de {totalPages} • Mostrando {paginatedFiltered.length} de {filtered.length} transacciones
+                                            <div className="px-4 md:px-6 py-3 md:py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                                                <p className="hidden md:block text-xs text-slate-500 dark:text-slate-400">
+                                                    Página {currentPage + 1} de {totalPages}
                                                 </p>
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1 md:gap-2">
                                                     <button
                                                         onClick={() => setTxPage(p => Math.max(0, p - 1))}
                                                         disabled={currentPage === 0}
-                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                                        className="px-2 md:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs md:text-sm font-medium"
                                                     >
                                                         Anterior
                                                     </button>
@@ -1622,7 +1622,7 @@ function App() {
                                                             <button
                                                                 key={i}
                                                                 onClick={() => setTxPage(i)}
-                                                                className={`w-8 h-8 rounded-lg transition-all text-sm font-medium ${i === currentPage
+                                                                className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all text-xs md:text-sm font-medium ${i === currentPage
                                                                     ? 'bg-primary text-white shadow-md shadow-primary/30'
                                                                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                                                                     }`}
@@ -1634,7 +1634,7 @@ function App() {
                                                     <button
                                                         onClick={() => setTxPage(p => Math.min(totalPages - 1, p + 1))}
                                                         disabled={currentPage >= totalPages - 1}
-                                                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                                                        className="px-2 md:px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-xs md:text-sm font-medium"
                                                     >
                                                         Siguiente
                                                     </button>
@@ -1697,17 +1697,17 @@ function App() {
                     const maxVal = Math.max(...monthlyComp.map(d => Math.max(d.income, d.expense)), 1);
 
                     return (
-                        <div className="px-8 pb-12 mt-4 space-y-6">
-                            <div className="grid grid-cols-12 gap-6">
+                        <div className="px-4 md:px-8 pb-12 mt-4 space-y-4 md:space-y-6">
+                            <div className="grid grid-cols-12 gap-4 md:gap-6">
                                 {/* Saving Rate Card */}
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
+                                    className="col-span-12 lg:col-span-4 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
                                 >
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Tasa de Ahorro</h3>
-                                    <div className="flex items-center justify-center py-4">
-                                        <div className="relative size-32">
+                                    <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Tasa de Ahorro</h3>
+                                    <div className="flex items-center justify-center py-2 md:py-4">
+                                        <div className="relative size-24 md:size-32">
                                             <svg className="size-full rotate-[-90deg]" viewBox="0 0 36 36">
                                                 <circle className="text-slate-100 dark:text-slate-800" cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" />
                                                 <motion.circle
@@ -1721,22 +1721,22 @@ function App() {
                                                 />
                                             </svg>
                                             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                                <span className={`text-2xl font-black ${savingsRate >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'}`}>
-                                                    {savingsRate >= 0 ? savingsRate.toFixed(1) : savingsRate.toFixed(1)}%
+                                                <span className={`text-xl md:text-2xl font-black ${savingsRate >= 0 ? 'text-slate-900 dark:text-white' : 'text-rose-500'}`}>
+                                                    {savingsRate.toFixed(0)}%
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="text-center mt-2">
-                                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${savingsColor === 'emerald' ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30' :
+                                        <span className={`text-[10px] md:text-xs font-semibold px-2 py-1 rounded-full ${savingsColor === 'emerald' ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30' :
                                             savingsColor === 'blue' ? 'text-blue-700 bg-blue-100 dark:bg-blue-900/30' :
                                                 savingsColor === 'amber' ? 'text-amber-700 bg-amber-100 dark:bg-amber-900/30' :
                                                     'text-rose-700 bg-rose-100 dark:bg-rose-900/30'
                                             }`}>
-                                            {savingsRate >= 50 ? '¡Excelente!' : savingsRate >= 20 ? 'Buen trabajo' : savingsRate >= 0 ? 'Puede mejorar' : 'Atención necesaria'}
+                                            {savingsRate >= 50 ? '¡Excelente!' : savingsRate >= 20 ? 'Buen trabajo' : savingsRate >= 0 ? 'Puede mejorar' : 'Atención'}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-center text-slate-500 mt-3">
+                                    <p className="hidden md:block text-xs text-center text-slate-500 mt-3">
                                         Tu ahorro es de <span className="text-emerald-500 font-bold">${ahorroReal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span> sobre ingresos de <span className="text-slate-600 dark:text-slate-400 font-bold">${totalIngresos.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>.
                                         {totalPagosTarjetas > 0 && (
                                             <span className="block mt-1">Incluye ${totalPagosTarjetas.toLocaleString('en-US', { minimumFractionDigits: 2 })} en pagos a tarjetas.</span>
@@ -1749,11 +1749,11 @@ function App() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.1 }}
-                                    className="col-span-12 lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
+                                    className="col-span-12 lg:col-span-8 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
                                 >
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Ingresos vs Gastos</h3>
-                                        <div className="flex gap-4">
+                                    <div className="flex justify-between items-center mb-4 md:mb-6">
+                                        <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider">Ingresos vs Gastos</h3>
+                                        <div className="hidden sm:flex gap-4">
                                             <div className="flex items-center gap-1.5">
                                                 <div className="size-2 rounded-full bg-emerald-500" />
                                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Ingresos</span>
@@ -1764,10 +1764,10 @@ function App() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="h-44 flex items-end justify-between gap-4">
+                                    <div className="h-32 md:h-44 flex items-end justify-between gap-2 md:gap-4 overflow-x-auto pb-2">
                                         {monthlyComp.map((d, i) => (
-                                            <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                                                <div className="flex items-end gap-1 w-full h-32">
+                                            <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end min-w-[30px] md:min-w-[40px]">
+                                                <div className="flex items-end gap-0.5 md:gap-1 w-full h-24 md:h-32">
                                                     <motion.div
                                                         initial={{ height: 0 }}
                                                         animate={{ height: `${(d.income / maxVal) * 100}%` }}
@@ -1779,7 +1779,7 @@ function App() {
                                                         className="flex-1 bg-rose-500/80 rounded-t-sm"
                                                     />
                                                 </div>
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{d.label}</span>
+                                                <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase">{d.label}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -1790,19 +1790,19 @@ function App() {
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.2 }}
-                                    className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
+                                    className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
                                 >
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Top 5 Lugares de Gasto</h3>
-                                    <div className="space-y-4">
+                                    <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 md:mb-6">Top 5 Lugares de Gasto</h3>
+                                    <div className="space-y-3 md:space-y-4">
                                         {topStores.map(([store, total], idx) => (
                                             <div key={store} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="size-6 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-500">{idx + 1}</span>
-                                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{store}</span>
+                                                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                                                    <span className="size-5 md:size-6 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-[9px] md:text-[10px] font-bold text-slate-500 flex-shrink-0">{idx + 1}</span>
+                                                    <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{store}</span>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-sm font-bold text-slate-900 dark:text-white">${total.toLocaleString()}</p>
-                                                    <div className="w-24 h-1 bg-slate-100 dark:bg-slate-800 rounded-full mt-1">
+                                                <div className="text-right flex-shrink-0">
+                                                    <p className="text-xs md:text-sm font-bold text-slate-900 dark:text-white">${total.toLocaleString()}</p>
+                                                    <div className="w-16 md:w-24 h-1 bg-slate-100 dark:bg-slate-800 rounded-full mt-1">
                                                         <div className="bg-primary h-full rounded-full" style={{ width: `${(total / topStores[0][1]) * 100}%` }} />
                                                     </div>
                                                 </div>
@@ -1817,19 +1817,19 @@ function App() {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.3 }}
-                                    className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
+                                    className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-900 rounded-2xl p-4 md:p-6 border border-slate-100 dark:border-slate-800/50 shadow-sm"
                                 >
-                                    <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-6">Distribución por Categoría</h3>
-                                    <div className="space-y-4">
+                                    <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 md:mb-6">Distribución por Categoría</h3>
+                                    <div className="space-y-3 md:space-y-4">
                                         {chartData.filter(d => d.amount > 0).sort((a, b) => b.amount - a.amount).map((cat) => (
                                             <div key={cat.name} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-3 rounded-full" style={{ backgroundColor: cat.color }} />
-                                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">{cat.name}</span>
+                                                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                                                    <div className="size-2 md:size-3 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                                                    <span className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-200 truncate">{cat.name}</span>
                                                 </div>
-                                                <div className="flex items-center gap-6">
-                                                    <span className="text-xs font-bold text-slate-400">{cat.percent.toFixed(1)}%</span>
-                                                    <span className="text-sm font-bold text-slate-900 dark:text-white w-20 text-right">${cat.amount.toLocaleString()}</span>
+                                                <div className="flex items-center gap-3 md:gap-6 flex-shrink-0">
+                                                    <span className="text-[9px] md:text-xs font-bold text-slate-400 whitespace-nowrap">{cat.percent.toFixed(0)}%</span>
+                                                    <span className="text-xs md:text-sm font-bold text-slate-900 dark:text-white w-14 md:w-20 text-right truncate">${cat.amount.toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         ))}
