@@ -1687,7 +1687,7 @@ function App() {
                             (tx.store || '').toLowerCase().includes(q) ||
                             (tx.category || '').toLowerCase().includes(q) ||
                             (tx.paymentMethod || '').toLowerCase().includes(q);
-                        const matchType = txFilterType === 'todos' || tx.type === txFilterType;
+                        const matchType = txFilterType === 'todos' || tx.type === txFilterType || (txFilterType === 'ahorro' && tx.category === 'Ahorro');
                         const matchCat = txFilterCategory === 'todas' || tx.category === txFilterCategory;
                         let matchMonth = true;
                         if (txFilterMonth !== 'todos') {
@@ -1779,7 +1779,7 @@ function App() {
 
                                 <div className="flex flex-wrap gap-2 md:gap-3">
                                     <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-1 overflow-x-auto">
-                                        {[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos']].map(([val, label]) => (
+                                        {[['todos', 'Todos'], ['gasto', 'Gastos'], ['ingreso', 'Ingresos'], ['ahorro', 'Ahorro']].map(([val, label]) => (
                                             <button key={val} onClick={() => setTxFilterType(val)}
                                                 className={`px-2 md:px-3 py-1 text-[10px] md:text-xs font-semibold rounded-md transition-colors whitespace-nowrap ${txFilterType === val ? 'bg-white dark:bg-slate-700 shadow-sm text-primary' : 'text-slate-500 hover:text-slate-700'}`}>
                                                 {label}
