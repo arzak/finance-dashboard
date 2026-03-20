@@ -6,6 +6,7 @@ import { migrateOrphanedDocs } from "./migrate";
 import { collection, onSnapshot, addDoc, serverTimestamp, query, orderBy, where } from "firebase/firestore";
 import { jsPDF } from "jspdf";
 import { autoTable } from "jspdf-autotable";
+import FinancialProjections from "./FinancialProjections";
 
 const INITIAL_TRANSACTIONS = [
     { id: '1', store: "Applee Store", category: "Tecnología", type: "gasto", paymentMethod: "Visa Gold", amount: 14.99, date: "Hoy", icon: "shopping_bag", iconColor: "blue" },
@@ -2165,6 +2166,14 @@ function App() {
                                     </div>
                                 </motion.div>
                             </div>
+
+                            {/* Financial Projections Module */}
+                            <FinancialProjections
+                                efectivoTotal={efectivoDisponible}
+                                deudaTotalTarjetas={totalDeudaTarjetas}
+                                gastosMensualesPromedio={totalGastosReales}
+                                ingresoMensualEstimado={totalIngresos}
+                            />
                         </div>
                     );
                 })()}
