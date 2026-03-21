@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "./AuthContext";
 
@@ -14,22 +14,57 @@ function GoogleIcon() {
     );
 }
 
+// Password strength validator
+function validatePasswordStrength(password) {
+    const requirements = [
+        { test: (p) => p.length >= 8, label: "Mínimo 8 caracteres" },
+        { test: (p) => /[A-Z]/.test(p), label: "Una mayúscula" },
+        { test: (p) => /[a-z]/.test(p), label: "Una minúscula" },
+        { test: (p) => /[0-9]/.test(p), label: "Un número" },
+        { test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p), label: "Un carácter especial" },
+    ];
+
+    const passed = requirements.filter(req => req.test(password));
+    const strength = (passed.length / requirements.length) * 100;
+
+    return {
+        strength,
+        passed: passed.length,
+        total: requirements.length,
+        requirements,
+        isValid: strength === 100
+    };
+}
+
 export default function AuthScreen() {
     const { login, register, loginWithGoogle } = useAuth();
-    const [mode, setMode] = useState("login"); // "login" | "register"
+    const [mode, setMode] = useState("login");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [googleLoading, setGoogleLoading] = useState(false);
+    const [failedAttempts, setFailedAttempts] = useState(0);
+    const [lockoutTime, setLockoutTime] = useState(0);
+    const [showPassword, setShowPassword] = useState(false);
+
+    const passwordStrength = mode === "register" ? validatePasswordStrength(password) : null;
+
+    // Rate limiting: decrement lockout timer
+    useEffect(() => {
+        if (lockoutTime > 0) {
+            const timer = setTimeout(() => setLockoutTime(lockoutTime - 1), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [lockoutTime]);
 
     const ERROR_MESSAGES = {
         "auth/user-not-found": "No existe una cuenta con ese correo.",
         "auth/wrong-password": "Contraseña incorrecta.",
         "auth/invalid-credential": "Correo o contraseña incorrectos.",
         "auth/email-already-in-use": "Ese correo ya está registrado.",
-        "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
+        "auth/weak-password": "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.",
         "auth/invalid-email": "El formato del correo no es válido.",
         "auth/too-many-requests": "Demasiados intentos. Intenta más tarde.",
         "auth/popup-closed-by-user": "Ventana de Google cerrada. Intenta de nuevo.",
@@ -38,17 +73,50 @@ export default function AuthScreen() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Check rate limiting
+        if (lockoutTime > 0) {
+            setError(`Demasiados intentos fallidos. Espera ${lockoutTime}s para intentar de nuevo.`);
+            return;
+        }
+
         setError("");
+
+        // Validate password strength for registration
+        if (mode === "register" && passwordStrength && !passwordStrength.isValid) {
+            setError("La contraseña no cumple con los requisitos de seguridad.");
+            return;
+        }
+
         setLoading(true);
         try {
             if (mode === "register") {
-                if (!name.trim()) { setError("El nombre es requerido."); setLoading(false); return; }
+                if (!name.trim()) {
+                    setError("El nombre es requerido.");
+                    setLoading(false);
+                    return;
+                }
                 await register(email, password, name.trim());
             } else {
                 await login(email, password);
             }
+            // Reset failed attempts on successful login
+            setFailedAttempts(0);
         } catch (err) {
-            setError(ERROR_MESSAGES[err.code] || "Error inesperado. Intenta de nuevo.");
+            const errorCode = err.code;
+            setError(ERROR_MESSAGES[errorCode] || "Error inesperado. Intenta de nuevo.");
+
+            // Increment failed attempts for login errors
+            if (mode === "login" && errorCode && errorCode.includes("auth/")) {
+                const newAttempts = failedAttempts + 1;
+                setFailedAttempts(newAttempts);
+
+                // Lockout after 5 failed attempts
+                if (newAttempts >= 5) {
+                    setLockoutTime(30); // 30 seconds lockout
+                    setFailedAttempts(0);
+                }
+            }
         }
         setLoading(false);
     };
@@ -58,6 +126,7 @@ export default function AuthScreen() {
         setGoogleLoading(true);
         try {
             await loginWithGoogle();
+            setFailedAttempts(0);
         } catch (err) {
             setError(ERROR_MESSAGES[err.code] || "Error al iniciar con Google.");
         }
@@ -96,8 +165,8 @@ export default function AuthScreen() {
                                 key={m}
                                 onClick={() => { setMode(m); setError(""); }}
                                 className={`flex-1 py-4 text-sm font-semibold transition-colors ${mode === m
-                                        ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50 dark:bg-blue-950/30"
-                                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                                    ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50/50 dark:bg-blue-950/30"
+                                    : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                                     }`}
                             >
                                 {m === "login" ? "Iniciar Sesión" : "Crear Cuenta"}
@@ -174,14 +243,84 @@ export default function AuthScreen() {
                                         <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                             Contraseña
                                         </label>
-                                        <input
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            placeholder={mode === "register" ? "Mínimo 6 caracteres" : "••••••••"}
-                                            className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition"
-                                            required
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                placeholder={mode === "register" ? "Mínimo 8 caracteres" : "••••••••"}
+                                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pr-12 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-lg">
+                                                    {showPassword ? "visibility_off" : "visibility"}
+                                                </span>
+                                            </button>
+                                        </div>
+
+                                        {/* Password strength indicator (register mode) */}
+                                        {mode === "register" && password && (
+                                            <motion.div
+                                                initial={{ opacity: 0, height: 0 }}
+                                                animate={{ opacity: 1, height: "auto" }}
+                                                className="mt-3 space-y-2"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full transition-all duration-300 ${passwordStrength.strength < 50
+                                                                    ? "bg-rose-500"
+                                                                    : passwordStrength.strength < 80
+                                                                        ? "bg-amber-500"
+                                                                        : "bg-emerald-500"
+                                                                }`}
+                                                            style={{ width: `${passwordStrength.strength}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className={`text-xs font-semibold ${passwordStrength.strength < 50
+                                                            ? "text-rose-500"
+                                                            : passwordStrength.strength < 80
+                                                                ? "text-amber-500"
+                                                                : "text-emerald-500"
+                                                        }`}>
+                                                        {Math.round(passwordStrength.strength)}%
+                                                    </span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-1">
+                                                    {passwordStrength.requirements.map((req, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className={`flex items-center gap-1.5 text-xs ${req.test(password)
+                                                                    ? "text-emerald-600 dark:text-emerald-400"
+                                                                    : "text-slate-400"
+                                                                }`}
+                                                        >
+                                                            <span className="material-symbols-outlined text-xs">
+                                                                {req.test(password) ? "check_circle" : "radio_button_unchecked"}
+                                                            </span>
+                                                            {req.label}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {/* Rate limiting warning */}
+                                        {lockoutTime > 0 && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -4 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="mt-2 flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-xs"
+                                            >
+                                                <span className="material-symbols-outlined text-sm flex-shrink-0">lock_clock</span>
+                                                Seguridad: Intenta de nuevo en {lockoutTime}s
+                                            </motion.div>
+                                        )}
                                     </div>
 
                                     {error && (

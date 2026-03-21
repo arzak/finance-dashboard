@@ -2,10 +2,66 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Regla base: requiere autenticación para cualquier acceso
+    
+    // Helper function to check if user is authenticated and owns the document
+    function isOwner() {
+      return request.auth != null && 
+             (resource == null || resource.data.userId == request.auth.uid) &&
+             (request.resource == null || request.resource.data.userId == request.auth.uid);
+    }
+    
+    // Helper function to validate transaction data
+    function isValidTransaction() {
+      let data = request.resource.data;
+      return data.amount is number && 
+             data.amount >= 0 &&
+             data.type in ['gasto', 'ingreso', 'pago_tarjeta'] &&
+             data.store is string &&
+             data.store.size() > 0 &&
+             data.store.size() <= 100 &&
+             data.category is string &&
+             data.createdAt is timestamp;
+    }
+    
+    // Helper function to validate credit card data
+    function isValidCreditCard() {
+      let data = request.resource.data;
+      return data.name is string &&
+             data.name.size() > 0 &&
+             data.name.size() <= 50 &&
+             data.lastFour is string &&
+             data.lastFour.size() == 4;
+    }
+
+    // Transactions: users can only read/write their own documents
+    match /transactions/{transactionId} {
+      allow read: if request.auth != null && 
+                  resource.data.userId == request.auth.uid;
+      
+      allow create: if isOwner() && isValidTransaction();
+      
+      allow update: if isOwner();
+      
+      allow delete: if request.auth != null && 
+                      resource.data.userId == request.auth.uid;
+    }
+
+    // Credit Cards: users can only read/write their own documents
+    match /creditCards/{cardId} {
+      allow read: if request.auth != null && 
+                  resource.data.userId == request.auth.uid;
+      
+      allow create: if isOwner() && isValidCreditCard();
+      
+      allow update: if isOwner();
+      
+      allow delete: if request.auth != null && 
+                      resource.data.userId == request.auth.uid;
+    }
+    
+    // Deny all other collections by default
     match /{document=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid != null;
+      allow read, write: if false;
     }
   }
 }
