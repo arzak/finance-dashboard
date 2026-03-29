@@ -1,14 +1,26 @@
-import React from 'react'
+import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
 import { AuthProvider } from './AuthContext.jsx'
-import AuthScreen from './AuthScreen.jsx'
 import { useAuth } from './AuthContext.jsx'
+import { FinanceProvider } from './contexts/FinanceContext.jsx'
 import './index.css'
+
+const App = lazy(() => import('./App.jsx'))
+const AuthScreen = lazy(() => import('./AuthScreen.jsx'))
 
 function Root() {
     const { currentUser } = useAuth();
-    return currentUser ? <App /> : <AuthScreen />;
+    return currentUser ? (
+        <FinanceProvider>
+            <Suspense fallback={null}>
+                <App />
+            </Suspense>
+        </FinanceProvider>
+    ) : (
+        <Suspense fallback={null}>
+            <AuthScreen />
+        </Suspense>
+    );
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
