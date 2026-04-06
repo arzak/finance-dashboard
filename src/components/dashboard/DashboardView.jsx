@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import CreditCardsPanel from "../cards/CreditCardsPanel";
 import EmptyState from "../common/EmptyState";
@@ -33,9 +33,28 @@ export default function DashboardView({
     onDownloadPdf,
     onViewAllTransactions,
 }) {
+    const [trendView, setTrendView] = useState("weekly");
     const avgMonthlyGasto = monthlyTotals.length
         ? monthlyTotals.reduce((sum, month) => sum + month.gastos, 0) / monthlyTotals.length
         : 0;
+    const weeklyData = useMemo(() => ([
+        { key: "Mon", label: "Mon", value: dayTotals.Mon || 0 },
+        { key: "Tue", label: "Tue", value: dayTotals.Tue || 0 },
+        { key: "Wed", label: "Wed", value: dayTotals.Wed || 0 },
+        { key: "Thu", label: "Thu", value: dayTotals.Thu || 0 },
+        { key: "Fri", label: "Fri", value: dayTotals.Fri || 0 },
+        { key: "Sat", label: "Sat", value: dayTotals.Sat || 0 },
+        { key: "Sun", label: "Sun", value: dayTotals.Sun || 0 },
+    ]), [dayTotals]);
+    const monthlyData = useMemo(() => (
+        monthlyTotals.map((month) => ({ key: month.label, label: month.label, value: month.gastos }))
+    ), [monthlyTotals]);
+    const activeTrendData = trendView === "weekly" ? weeklyData : monthlyData;
+    const maxTrendValue = Math.max(...activeTrendData.map((item) => item.value), 1);
+    const avgTrendValue = activeTrendData.length
+        ? activeTrendData.reduce((sum, item) => sum + item.value, 0) / activeTrendData.length
+        : 0;
+    const totalTrendValue = activeTrendData.reduce((sum, item) => sum + item.value, 0);
     return (
         <div className="px-4 md:px-8 pb-12 grid grid-cols-12 gap-4 md:gap-6 auto-rows-min mt-4">
             <SectionCard className="col-span-12 lg:col-span-7 p-4 md:p-6">
@@ -152,7 +171,8 @@ export default function DashboardView({
                             </div>
                             <div className="flex items-end justify-between h-16 md:h-20 gap-1.5 md:gap-2 px-1">
                                 {monthlyTotals.map((month, index) => {
-                                    const height = (month.gastos / maxMonthlyGasto) * 100;
+                                    const rawHeight = maxMonthlyGasto > 0 ? (month.gastos / maxMonthlyGasto) * 100 : 0;
+                                    const height = month.gastos > 0 ? Math.max(rawHeight, 2) : 0;
                                     const isCurrent = index === monthlyTotals.length - 1;
                                     const prev = index > 0 ? monthlyTotals[index - 1].gastos : null;
                                     const delta = prev !== null ? month.gastos - prev : null;
@@ -162,16 +182,15 @@ export default function DashboardView({
                                     return (
                                         <div
                                             key={index}
-                                            className="flex-1 flex flex-col items-center gap-1 group relative"
+                                            className="flex-1 h-full flex flex-col items-center justify-end gap-1 group relative"
                                             tabIndex={0}
                                         >
                                             <div className="w-full h-full flex items-end relative">
                                                 <motion.div
                                                     initial={{ height: 0 }}
-                                                    animate={{ height: `${Math.max(height, month.gastos > 0 ? 8 : 0)}%` }}
+                                                    animate={{ height: `${height}%` }}
                                                     transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.06 }}
                                                     className={`w-full rounded-t-xl ${isCurrent ? "bg-gradient-to-t from-primary to-primary/60 shadow-lg shadow-primary/20" : "bg-primary/25"}`}
-                                                    style={{ minHeight: month.gastos > 0 ? 8 : 0 }}
                                                 />
                                                 <div
                                                     className={`absolute -top-1 left-1/2 -translate-x-1/2 size-2 rounded-full ${isCurrent ? "bg-primary" : "bg-primary/50"}`}
@@ -221,29 +240,88 @@ export default function DashboardView({
             />
 
             <SectionCard className="col-span-12 lg:col-span-8 p-4 md:p-8">
-                <div className="flex justify-between items-center mb-4 md:mb-8">
-                    <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">Tendencias de Gastos</h3>
-                    <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                        <button className="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white">Semanal</button>
-                        <button className="px-3 py-1 text-xs font-semibold rounded text-slate-500">Mensual</button>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 md:mb-6">
+                    <div>
+                        <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">Tendencias de Gastos</h3>
+                        <p className="text-[10px] md:text-xs text-slate-500">
+                            {trendView === "weekly" ? "Actividad por dia de la semana" : "Comparativo de los ultimos meses"}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="hidden sm:flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                            <button
+                                type="button"
+                                onClick={() => setTrendView("weekly")}
+                                className={`px-3 py-1 text-xs font-semibold rounded transition-all ${trendView === "weekly" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500"}`}
+                            >
+                                Semanal
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setTrendView("monthly")}
+                                className={`px-3 py-1 text-xs font-semibold rounded transition-all ${trendView === "monthly" ? "bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white" : "text-slate-500"}`}
+                            >
+                                Mensual
+                            </button>
+                        </div>
+                        <div className="flex sm:hidden bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                            <button
+                                type="button"
+                                onClick={() => setTrendView(trendView === "weekly" ? "monthly" : "weekly")}
+                                className="px-3 py-1 text-xs font-semibold rounded bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white"
+                            >
+                                {trendView === "weekly" ? "Semanal" : "Mensual"}
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div className="flex items-end justify-between h-36 md:h-48 gap-1 md:gap-4 pb-4 md:pb-6 overflow-x-auto">
-                    {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => {
-                        const heightPercent = (dayTotals[day] / maxDayTotal) * 100;
-                        const isMax = dayTotals[day] === maxDayTotal && maxDayTotal > 100;
-                        return (
-                            <div key={day} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative h-full min-w-[30px] md:min-w-[40px]">
-                                <motion.div
-                                    initial={{ height: 0 }}
-                                    animate={{ height: `${heightPercent}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className={`absolute bottom-0 w-full ${isMax ? "bg-primary" : "bg-primary/20"} rounded-t-lg`}
-                                />
-                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] md:text-[10px] uppercase font-bold text-slate-400 whitespace-nowrap">{day}</div>
-                            </div>
-                        );
-                    })}
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] md:text-xs font-semibold text-slate-600">
+                        Total ${totalTrendValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="px-2.5 py-1 rounded-full bg-slate-100 text-[10px] md:text-xs font-semibold text-slate-600">
+                        Promedio ${avgTrendValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className="hidden md:flex items-center gap-1 text-[10px] text-slate-400">
+                        <span className="size-2 rounded-full bg-primary/40" />
+                        {trendView === "weekly" ? "Dia destacado" : "Mes destacado"}
+                    </div>
+                </div>
+                <div className="relative">
+                    <div
+                        className="absolute inset-x-0"
+                        style={{ bottom: `${(avgTrendValue / maxTrendValue) * 100}%` }}
+                    >
+                        <div className="border-t border-dashed border-slate-200 dark:border-slate-700 relative">
+                            <span className="absolute -top-3 right-0 text-[8px] md:text-[9px] text-slate-400 uppercase font-semibold bg-white/80 dark:bg-slate-900/80 px-1">
+                                Promedio
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex items-end justify-between h-36 md:h-48 gap-1 md:gap-4 pb-4 md:pb-6 overflow-x-auto">
+                        {activeTrendData.map((item, index) => {
+                            const heightPercent = (item.value / maxTrendValue) * 100;
+                            const isMax = item.value === maxTrendValue && maxTrendValue > 0;
+                            return (
+                                <div key={item.key} className="flex-1 bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative h-full min-w-[30px] md:min-w-[40px] group">
+                                    <motion.div
+                                        initial={{ height: 0 }}
+                                        animate={{ height: `${heightPercent}%` }}
+                                        transition={{ duration: 0.9, ease: "easeOut", delay: index * 0.04 }}
+                                        className={`absolute bottom-0 w-full ${isMax ? "bg-primary" : "bg-primary/20"} rounded-t-lg`}
+                                    />
+                                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] md:text-[10px] uppercase font-bold text-slate-400 whitespace-nowrap">
+                                        {item.label}
+                                    </div>
+                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-10">
+                                        <div className="bg-slate-900 text-white text-[9px] md:text-[10px] px-2 py-1 rounded-lg shadow-lg whitespace-nowrap">
+                                            ${item.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </SectionCard>
 
