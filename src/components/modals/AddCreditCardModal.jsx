@@ -6,6 +6,8 @@ export default function AddCreditCardModal({ isOpen, onClose, onAddCard }) {
     const [lastFour, setLastFour] = useState("");
     const [limit, setLimit] = useState("");
     const [themeColor, setThemeColor] = useState("blue");
+    const [billingDay, setBillingDay] = useState("");
+    const [dueDay, setDueDay] = useState("");
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -20,11 +22,15 @@ export default function AddCreditCardModal({ isOpen, onClose, onAddCard }) {
             payments: 0,
             balance: 0,
             themeColor,
+            billingDay: billingDay ? parseInt(billingDay, 10) : null,
+            dueDay: dueDay ? parseInt(dueDay, 10) : null,
         });
 
         setName("");
         setLastFour("");
         setLimit("");
+        setBillingDay("");
+        setDueDay("");
         onClose();
     };
 
@@ -66,6 +72,38 @@ export default function AddCreditCardModal({ isOpen, onClose, onAddCard }) {
                                     <option value="orange">Orange</option>
                                     <option value="black">Black</option>
                                 </select>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Dia de corte
+                                        <span className="block text-xs text-slate-500 font-normal mt-0.5">Cuando cierra tu periodo</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="31"
+                                        value={billingDay}
+                                        onChange={(event) => setBillingDay(event.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        placeholder="Ej. 10"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Dia de pago
+                                        <span className="block text-xs text-slate-500 font-normal mt-0.5">Fecha limite de pago</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="31"
+                                        value={dueDay}
+                                        onChange={(event) => setDueDay(event.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                        placeholder="Ej. 25"
+                                    />
+                                </div>
                             </div>
                             <button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-primary/30 mt-6">
                                 Agregar Tarjeta

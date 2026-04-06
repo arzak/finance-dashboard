@@ -25,6 +25,13 @@ function toNumber(value) {
     return parseFloat(value) || 0;
 }
 
+function toDay(value) {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return null;
+    if (parsed < 1 || parsed > 31) return null;
+    return parsed;
+}
+
 export function normalizeCreditCardPayload(card) {
     const limit = toNumber(card.limit ?? card[LEGACY_LIMIT_KEY]);
 
@@ -35,6 +42,8 @@ export function normalizeCreditCardPayload(card) {
         initialDebt: toNumber(card.initialDebt),
         payments: toNumber(card.payments),
         manualAdjustment: toNumber(card.manualAdjustment),
+        billingDay: toDay(card.billingDay),
+        dueDay: toDay(card.dueDay),
     };
 }
 

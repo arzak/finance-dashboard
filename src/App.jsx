@@ -125,7 +125,9 @@ function App() {
                 initialDebt: parseFloat(updatedData.initialDebt) || 0,
                 payments: parseFloat(updatedData.payments) || 0,
                 manualAdjustment: parseFloat(updatedData.manualAdjustment) || 0,
-                themeColor: updatedData.themeColor
+                themeColor: updatedData.themeColor,
+                billingDay: updatedData.billingDay ?? null,
+                dueDay: updatedData.dueDay ?? null,
             });
             console.log('Tarjeta actualizada correctamente');
         } catch (error) {

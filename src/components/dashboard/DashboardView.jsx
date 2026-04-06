@@ -33,6 +33,9 @@ export default function DashboardView({
     onDownloadPdf,
     onViewAllTransactions,
 }) {
+    const avgMonthlyGasto = monthlyTotals.length
+        ? monthlyTotals.reduce((sum, month) => sum + month.gastos, 0) / monthlyTotals.length
+        : 0;
     return (
         <div className="px-4 md:px-8 pb-12 grid grid-cols-12 gap-4 md:gap-6 auto-rows-min mt-4">
             <SectionCard className="col-span-12 lg:col-span-7 p-4 md:p-6">
@@ -136,21 +139,60 @@ export default function DashboardView({
                                 Mes actual destacado
                             </span>
                         </div>
-                        <div className="h-20 md:h-24 w-full relative">
-                            <div className="flex items-end justify-between h-14 md:h-16 gap-1.5 md:gap-2 px-1">
+                        <div className="h-24 md:h-28 w-full relative">
+                            <div
+                                className="absolute inset-x-1"
+                                style={{ bottom: `${(avgMonthlyGasto / maxMonthlyGasto) * 100}%` }}
+                            >
+                                <div className="border-t border-dashed border-slate-300/80 relative">
+                                    <span className="absolute -top-3 right-0 text-[8px] md:text-[9px] text-slate-400 uppercase font-semibold bg-slate-50 px-1">
+                                        Promedio
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-end justify-between h-16 md:h-20 gap-1.5 md:gap-2 px-1">
                                 {monthlyTotals.map((month, index) => {
                                     const height = (month.gastos / maxMonthlyGasto) * 100;
                                     const isCurrent = index === monthlyTotals.length - 1;
+                                    const prev = index > 0 ? monthlyTotals[index - 1].gastos : null;
+                                    const delta = prev !== null ? month.gastos - prev : null;
+                                    const deltaPct = prev && prev > 0 ? (delta / prev) * 100 : null;
+                                    const isUp = delta !== null ? delta > 0 : false;
+                                    const showBadge = isCurrent || month.gastos === maxMonthlyGasto;
                                     return (
-                                        <div key={index} className="flex-1 flex flex-col items-center gap-1 group relative">
-                                            <div className="w-full h-full flex items-end">
+                                        <div
+                                            key={index}
+                                            className="flex-1 flex flex-col items-center gap-1 group relative"
+                                            tabIndex={0}
+                                        >
+                                            <div className="w-full h-full flex items-end relative">
                                                 <motion.div
                                                     initial={{ height: 0 }}
                                                     animate={{ height: `${Math.max(height, month.gastos > 0 ? 8 : 0)}%` }}
                                                     transition={{ duration: 0.8, ease: "easeOut", delay: index * 0.06 }}
-                                                    className={`w-full rounded-t-xl ${isCurrent ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/25"}`}
+                                                    className={`w-full rounded-t-xl ${isCurrent ? "bg-gradient-to-t from-primary to-primary/60 shadow-lg shadow-primary/20" : "bg-primary/25"}`}
                                                     style={{ minHeight: month.gastos > 0 ? 8 : 0 }}
                                                 />
+                                                <div
+                                                    className={`absolute -top-1 left-1/2 -translate-x-1/2 size-2 rounded-full ${isCurrent ? "bg-primary" : "bg-primary/50"}`}
+                                                />
+                                                {showBadge && (
+                                                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-semibold bg-white text-slate-600 border border-slate-200 shadow-sm">
+                                                        ${month.gastos.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                                                    </div>
+                                                )}
+                                                <div className="absolute -top-14 left-1/2 -translate-x-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-focus:opacity-100 transition-opacity z-10">
+                                                    <div className="bg-slate-900 text-white text-[9px] md:text-[10px] px-2 py-1 rounded-lg shadow-lg whitespace-nowrap">
+                                                        <span className="font-semibold">{month.label}</span>{" "}
+                                                        ${month.gastos.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                                                        {delta !== null && (
+                                                            <span className={`ml-1 ${isUp ? "text-emerald-300" : "text-rose-300"}`}>
+                                                                {isUp ? "▲" : "▼"} {Math.abs(delta).toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                                                                {deltaPct !== null ? ` (${Math.abs(deltaPct).toFixed(0)}%)` : ""}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     );

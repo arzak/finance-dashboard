@@ -70,6 +70,20 @@ export default function CreditCardsPanel({
     onEditCard,
     activeCard,
 }) {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    const getDaysUntilDue = (dayOfMonth) => {
+        if (!dayOfMonth) return null;
+        const dueThisMonth = new Date(currentYear, currentMonth, dayOfMonth);
+        const candidate = dueThisMonth >= today
+            ? dueThisMonth
+            : new Date(currentYear, currentMonth + 1, dayOfMonth);
+        const diffMs = candidate.setHours(0, 0, 0, 0) - new Date(currentYear, currentMonth, today.getDate()).setHours(0, 0, 0, 0);
+        return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    };
+
     return (
         <SectionCard className="col-span-12 lg:col-span-5 p-4 md:p-6">
             <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -95,6 +109,18 @@ export default function CreditCardsPanel({
                         const percentUsed = cardLimit > 0 ? Math.min((totalDebt / cardLimit) * 100, 100) : 0;
                         const colors = cardColors[card.themeColor] || cardColors.blue;
                         const isSelected = (selectedCardId ?? creditCards[0]?.id) === card.id;
+                        const billingDay = card.billingDay || null;
+                        const dueDay = card.dueDay || null;
+                        const daysUntilDue = getDaysUntilDue(dueDay);
+                        const showDueAlert = daysUntilDue !== null && daysUntilDue <= 5;
+                        const dueLabel = daysUntilDue === 0
+                            ? "Vence hoy"
+                            : daysUntilDue === 1
+                                ? "Vence en 1 dia"
+                                : `Vence en ${daysUntilDue} dias`;
+                        const dueTone = daysUntilDue === 0
+                            ? "bg-rose-100 text-rose-600"
+                            : "bg-amber-100 text-amber-700";
 
                         return (
                             <motion.div
@@ -134,6 +160,16 @@ export default function CreditCardsPanel({
                                         <div className="min-w-0 flex-1">
                                             <p className="font-bold text-xs md:text-sm text-slate-900 truncate">{card.name}</p>
                                             <p className="text-[9px] md:text-[10px] text-slate-500 uppercase font-bold tracking-[0.22em]">**** {card.lastFour}</p>
+                                            {(billingDay || dueDay) && (
+                                                <p className="text-[8px] md:text-[9px] text-slate-500 mt-1 font-semibold uppercase tracking-wide">
+                                                    {billingDay ? `Corte dia ${billingDay}` : "Corte sin fecha"} {dueDay ? `• Pago dia ${dueDay}` : ""}
+                                                </p>
+                                            )}
+                                            {showDueAlert && (
+                                                <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-semibold ${dueTone}`}>
+                                                    {dueLabel}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="relative z-20 flex gap-1 flex-shrink-0">
