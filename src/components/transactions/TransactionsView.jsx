@@ -6,6 +6,7 @@ import { formatCurrency } from "../../utils/formatters";
 import { getTransactionDate, getTransactionMonthKey } from "../../utils/transactionDates";
 
 const MONTHS_LABEL = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const getSignedAmount = (transaction) => Math.abs(parseFloat(transaction.amount) || 0);
 
 export default function TransactionsView({
     transactions,
@@ -57,15 +58,15 @@ export default function TransactionsView({
 
     const totalFiltrado = filtered.reduce((accumulator, transaction) => {
         if (transaction.type === "ingreso") {
-            return accumulator + parseFloat(transaction.amount);
+            return accumulator + getSignedAmount(transaction);
         }
 
-        return accumulator - parseFloat(transaction.amount);
+        return accumulator - getSignedAmount(transaction);
     }, 0);
 
-    const totalIngresosFiltrados = filtered.filter((transaction) => transaction.type === "ingreso").reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
-    const totalGastosFiltrados = filtered.filter((transaction) => transaction.type === "gasto").reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
-    const totalPagosFiltrados = filtered.filter((transaction) => transaction.type === "pago_tarjeta").reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
+    const totalIngresosFiltrados = filtered.filter((transaction) => transaction.type === "ingreso").reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
+    const totalGastosFiltrados = filtered.filter((transaction) => transaction.type === "gasto").reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
+    const totalPagosFiltrados = filtered.filter((transaction) => transaction.type === "pago_tarjeta").reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
 
     const resetFilters = () => {
         setTxSearch("");
@@ -236,9 +237,9 @@ export default function TransactionsView({
                                             <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
                                                 <div className="text-right">
                                                     <p className={`font-bold text-xs md:text-sm ${transaction.type === "ingreso" ? "text-emerald-500" : transaction.type === "pago_tarjeta" ? "text-blue-500" : "text-rose-500"} truncate max-w-[80px] md:max-w-none`}>
-                                                        {transaction.type === "ingreso" ? "+" : "-"}${formatCurrency(transaction.amount)}
+                                                        {transaction.type === "ingreso" ? "+" : "-"}${formatCurrency(getSignedAmount(transaction))}
                                                     </p>
-                                                    <span className={`hidden sm:inline text-[9px] md:text-[10px] font-semibold px-2 py-0.5 rounded-full ${transaction.type === "gasto" ? "bg-rose-50 dark:bg-rose-900/20 text-rose-500" : transaction.type === "pago_tarjeta" ? "bg-blue-50 dark:bg-blue-900/20 text-blue-500" : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500"}`}>
+                                                        <span className={`hidden sm:inline text-[9px] md:text-[10px] font-semibold px-2 py-0.5 rounded-full ${transaction.type === "gasto" ? "bg-rose-50 dark:bg-rose-900/20 text-rose-500" : transaction.type === "pago_tarjeta" ? "bg-blue-50 dark:bg-blue-900/20 text-blue-500" : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500"}`}>
                                                         {transaction.type === "gasto" ? "Gasto" : transaction.type === "pago_tarjeta" ? "Pago" : "Ingreso"}
                                                     </span>
                                                 </div>

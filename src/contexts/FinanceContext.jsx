@@ -96,16 +96,6 @@ export function FinanceProvider({ children }) {
         });
     }, [creditCards, currentUser]);
 
-    const addTransaction = useCallback(async (transaction) => {
-        if (!currentUser) throw new Error("No database connection");
-        if (transaction.type === "pago_tarjeta" && transaction.cardId) {
-            await addCardPayment(currentUser.uid, transaction.cardId, transaction.amount, transaction);
-            return;
-        }
-
-        await createTransaction(currentUser.uid, transaction);
-    }, [currentUser]);
-
     const deleteTransaction = useCallback(async (transactionOrId) => {
         if (!currentUser) throw new Error("No database connection");
         const transaction = typeof transactionOrId === "object" ? transactionOrId : null;
@@ -150,17 +140,43 @@ export function FinanceProvider({ children }) {
 
     const {
         spentPerCard,
+        cardDetails,
         totalIngresos,
         totalGastos,
         totalPagosTarjetas,
+        manualCardPayments,
+        totalPagosAplicados,
         totalDeudaTarjetas,
         gastosImpactoEfectivo,
         gastosSinPagosTarjetas,
+        cashBeforeCardPayments,
         efectivoDisponible,
         patrimonioNeto,
         deudaPorcentaje,
         patrimonioPositivo,
+        liquidityAlerts,
+        cardsDueSoon,
+        paymentPriority,
+        currentMonthSpendingInsight,
     } = calculateFinancialSnapshot(transactions, creditCards);
+
+    const addTransaction = useCallback(async (transaction) => {
+        if (!currentUser) throw new Error("No database connection");
+        if (transaction.type === "pago_tarjeta" && transaction.cardId) {
+            const paymentAmount = parseFloat(transaction.amount) || 0;
+            if (paymentAmount > efectivoDisponible) {
+                console.warn("Card payment exceeds available cash", {
+                    paymentAmount,
+                    efectivoDisponible,
+                });
+            }
+
+            await addCardPayment(currentUser.uid, transaction.cardId, transaction.amount, transaction);
+            return;
+        }
+
+        await createTransaction(currentUser.uid, transaction);
+    }, [currentUser, efectivoDisponible]);
 
     const value = {
         transactions,
@@ -173,16 +189,24 @@ export function FinanceProvider({ children }) {
         addCreditCard,
         updateCreditCard,
         spentPerCard,
+        cardDetails,
         totalIngresos,
         totalGastos,
         totalPagosTarjetas,
+        manualCardPayments,
+        totalPagosAplicados,
         totalDeudaTarjetas,
         gastosImpactoEfectivo,
         gastosSinPagosTarjetas,
+        cashBeforeCardPayments,
         efectivoDisponible,
         patrimonioNeto,
         deudaPorcentaje,
         patrimonioPositivo,
+        liquidityAlerts,
+        cardsDueSoon,
+        paymentPriority,
+        currentMonthSpendingInsight,
     };
 
     return (

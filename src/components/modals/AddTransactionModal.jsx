@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function AddTransactionModal({ isOpen, onClose, onAdd, creditCards }) {
+export default function AddTransactionModal({
+    isOpen,
+    onClose,
+    onAdd,
+    creditCards,
+    efectivoDisponible = 0,
+}) {
     const [store, setStore] = useState("");
     const [amount, setAmount] = useState("");
     const [type, setType] = useState("gasto");
@@ -19,6 +25,9 @@ export default function AddTransactionModal({ isOpen, onClose, onAdd, creditCard
         () => creditCards?.find((card) => card.id === selectedPaymentCardId) || null,
         [creditCards, selectedPaymentCardId],
     );
+    const paymentAmount = parseFloat(amount) || 0;
+    const hasLiquidityWarning = type === "pago_tarjeta" && paymentAmount > efectivoDisponible;
+    const liquidityShortfall = Math.max(paymentAmount - efectivoDisponible, 0);
 
     useEffect(() => {
         if (type === "ingreso") {
@@ -90,6 +99,15 @@ export default function AddTransactionModal({ isOpen, onClose, onAdd, creditCard
             });
         } else if (type === "pago_tarjeta") {
             if (!selectedPaymentCard) return;
+            if (hasLiquidityWarning) {
+                const confirmed = window.confirm(
+                    `Este pago excede tu efectivo disponible por $${liquidityShortfall.toFixed(2)} y dejara tu liquidez en negativo. ¿Deseas registrarlo de todos modos?`,
+                );
+
+                if (!confirmed) {
+                    return;
+                }
+            }
 
             onAdd({
                 store: store || `Pago a ${selectedPaymentCard.name}`,
@@ -269,6 +287,12 @@ export default function AddTransactionModal({ isOpen, onClose, onAdd, creditCard
                                             <option value="Tarjeta de Debito">Tarjeta de Debito</option>
                                         </select>
                                     </div>
+                                    {hasLiquidityWarning && (
+                                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                            Este pago supera tu efectivo disponible por ${liquidityShortfall.toFixed(2)}.
+                                            Tu liquidez estimada quedaria en ${(efectivoDisponible - paymentAmount).toFixed(2)}.
+                                        </div>
+                                    )}
                                 </>
                             )}
 

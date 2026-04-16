@@ -30,14 +30,22 @@ function App() {
         transactions,
         creditCards,
         spentPerCard,
+        cardDetails,
         totalIngresos,
         totalGastos,
         totalPagosTarjetas,
+        manualCardPayments,
+        totalPagosAplicados,
         totalDeudaTarjetas,
+        cashBeforeCardPayments,
         efectivoDisponible,
         patrimonioNeto,
         deudaPorcentaje,
         patrimonioPositivo,
+        liquidityAlerts,
+        cardsDueSoon,
+        paymentPriority,
+        currentMonthSpendingInsight,
         addTransaction,
         addCreditCard,
         updateCreditCard,
@@ -163,13 +171,21 @@ function App() {
                 totalIngresos,
                 totalGastos,
                 totalPagosTarjetas,
+                manualCardPayments,
+                totalPagosAplicados,
                 totalDeudaTarjetas,
+                cashBeforeCardPayments,
                 efectivoDisponible,
                 patrimonioNeto,
                 creditCards,
+                cardDetails,
                 spentPerCard,
                 transactions,
                 calculateCardFinancialDetails,
+                liquidityAlerts,
+                cardsDueSoon,
+                paymentPriority,
+                currentMonthSpendingInsight,
             });
             console.log("PDF generado exitosamente");
         } catch (error) {
@@ -350,6 +366,13 @@ function App() {
                             saludFinancieraIcon={saludFinancieraIcon}
                             deudaPorcentaje={deudaPorcentaje}
                             totalDeudaTarjetas={totalDeudaTarjetas}
+                            cashBeforeCardPayments={cashBeforeCardPayments}
+                            manualCardPayments={manualCardPayments}
+                            totalPagosAplicados={totalPagosAplicados}
+                            liquidityAlerts={liquidityAlerts}
+                            cardsDueSoon={cardsDueSoon}
+                            paymentPriority={paymentPriority}
+                            currentMonthSpendingInsight={currentMonthSpendingInsight}
                             monthlyTotals={monthlyTotals}
                             maxMonthlyGasto={maxMonthlyGasto}
                             creditCards={creditCards}
@@ -408,6 +431,12 @@ function App() {
                             efectivoDisponible={efectivoDisponible}
                             totalDeudaTarjetas={totalDeudaTarjetas}
                             creditCards={creditCards}
+                            manualCardPayments={manualCardPayments}
+                            totalPagosAplicados={totalPagosAplicados}
+                            liquidityAlerts={liquidityAlerts}
+                            cardsDueSoon={cardsDueSoon}
+                            paymentPriority={paymentPriority}
+                            currentMonthSpendingInsight={currentMonthSpendingInsight}
                         />
                     </Suspense>
                 )}
@@ -445,6 +474,7 @@ function App() {
                     onClose={() => setIsModalOpen(false)}
                     onAdd={handleAddGasto}
                     creditCards={creditCards}
+                    efectivoDisponible={efectivoDisponible}
                 />
                 <AddCreditCardModal
                     isOpen={isCardModalOpen}

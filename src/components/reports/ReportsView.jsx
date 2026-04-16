@@ -18,6 +18,12 @@ export default function ReportsView({
     efectivoDisponible,
     totalDeudaTarjetas,
     creditCards,
+    manualCardPayments,
+    totalPagosAplicados,
+    liquidityAlerts,
+    cardsDueSoon,
+    paymentPriority,
+    currentMonthSpendingInsight,
 }) {
     const [creditRange, setCreditRange] = useState("year");
     const today = new Date();
@@ -33,6 +39,7 @@ export default function ReportsView({
     const totalPagosTarjetas = transactions
         .filter((transaction) => transaction.type === "pago_tarjeta")
         .reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
+    const priorityCard = paymentPriority?.[0] || null;
 
     const ahorroReal = totalIngresos - totalGastosReales;
     let savingsRate = totalIngresos > 0 ? (ahorroReal / totalIngresos) * 100 : 0;
@@ -72,6 +79,13 @@ export default function ReportsView({
     });
 
     const maxValue = Math.max(...monthlyComparison.map((item) => Math.max(item.income, item.expense)), 1);
+    const formatCompactAmount = (value) => {
+        if (value >= 1000) {
+            return `$${(value / 1000).toFixed(1)}k`;
+        }
+
+        return `$${value.toFixed(0)}`;
+    };
 
     const creditPeriods = useMemo(() => {
         if (creditRange === "6m") {
@@ -200,7 +214,88 @@ export default function ReportsView({
                         {totalPagosTarjetas > 0 && (
                             <span className="block mt-1">Incluye ${formatCurrency(totalPagosTarjetas)} en pagos a tarjetas.</span>
                         )}
+                        {manualCardPayments > 0 && (
+                            <span className="block mt-1">Tambien se aplican ${formatCurrency(manualCardPayments)} en pagos capturados directamente en la tarjeta.</span>
+                        )}
                     </p>
+                    </motion.div>
+                </SectionCard>
+
+                <SectionCard className="col-span-12 lg:col-span-8 p-4 md:p-6">
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+                            <div>
+                                <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider">Diagnostico de liquidez</h3>
+                                <p className="text-[10px] md:text-xs text-slate-400 mt-1">Pagos aplicados al efectivo y prioridades de vencimiento</p>
+                            </div>
+                            <div className="rounded-xl bg-slate-50 px-3 py-2">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Pagos aplicados</p>
+                                <p className="text-sm md:text-base font-black text-slate-900 dark:text-white">${formatCurrency(totalPagosAplicados)}</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Liquidez actual</p>
+                                <p className={`text-lg font-black ${efectivoDisponible >= 0 ? "text-slate-900 dark:text-white" : "text-rose-500"}`}>
+                                    ${formatCurrency(efectivoDisponible)}
+                                </p>
+                                {liquidityAlerts?.length > 0 ? (
+                                    <div className="mt-2 space-y-2">
+                                        {liquidityAlerts.map((alert) => (
+                                            <p key={alert.id} className={`text-xs font-semibold ${alert.severity === "danger" ? "text-rose-600" : "text-amber-600"}`}>
+                                                {alert.message}
+                                            </p>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="mt-2 text-xs text-slate-500">Sin alertas de liquidez.</p>
+                                )}
+                            </div>
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <p className="text-[10px] uppercase font-bold text-slate-400">Tarjeta prioritaria</p>
+                                {priorityCard ? (
+                                    <>
+                                        <p className="text-lg font-black text-slate-900 dark:text-white">{priorityCard.name}</p>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            {priorityCard.daysUntilDue !== null
+                                                ? `Vence en ${priorityCard.daysUntilDue} dia${priorityCard.daysUntilDue === 1 ? "" : "s"}`
+                                                : "Sin fecha de pago registrada"} con deuda de ${formatCurrency(priorityCard.totalDebt)}.
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p className="mt-2 text-xs text-slate-500">No hay deuda pendiente para priorizar.</p>
+                                )}
+                            </div>
+                        </div>
+                        {(cardsDueSoon?.length > 0 || currentMonthSpendingInsight) && (
+                            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                                    <p className="text-[10px] uppercase font-bold text-amber-700">Vencen en menos de 48 horas</p>
+                                    {cardsDueSoon?.length > 0 ? (
+                                        cardsDueSoon.map((card) => (
+                                            <p key={card.id} className="mt-2 text-xs text-amber-800">
+                                                {card.name}: ${formatCurrency(card.totalDebt)} y vence {card.daysUntilDue === 0 ? "hoy" : `en ${card.daysUntilDue} dia${card.daysUntilDue === 1 ? "" : "s"}`}.
+                                            </p>
+                                        ))
+                                    ) : (
+                                        <p className="mt-2 text-xs text-amber-800">No hay vencimientos urgentes.</p>
+                                    )}
+                                </div>
+                                <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                                    <p className="text-[10px] uppercase font-bold text-slate-400">Ritmo del mes actual</p>
+                                    {currentMonthSpendingInsight ? (
+                                        <>
+                                            <p className="mt-1 text-sm font-black text-slate-900 dark:text-white">{currentMonthSpendingInsight.label}</p>
+                                            <p className="mt-1 text-xs text-slate-500">
+                                                Actual ${formatCurrency(currentMonthSpendingInsight.currentMonthAmount)} vs promedio ${formatCurrency(currentMonthSpendingInsight.averagePreviousMonths)}.
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <p className="mt-2 text-xs text-slate-500">Sin datos suficientes para el analisis.</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 </SectionCard>
 
@@ -229,6 +324,18 @@ export default function ReportsView({
                     <div className="h-32 md:h-44 flex items-end justify-between gap-2 md:gap-4 overflow-x-auto pb-2">
                         {monthlyComparison.map((item, index) => (
                             <div key={index} className="flex-1 flex flex-col items-center gap-1 h-full justify-end min-w-[30px] md:min-w-[40px]">
+                                <div className="flex items-center justify-center gap-1 md:gap-2 min-h-[20px] md:min-h-[24px] mb-1 text-[8px] md:text-[10px] font-bold">
+                                    {item.income > 0 && (
+                                        <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-600">
+                                            {formatCompactAmount(item.income)}
+                                        </span>
+                                    )}
+                                    {item.expense > 0 && (
+                                        <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-rose-600">
+                                            {formatCompactAmount(item.expense)}
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="flex items-end gap-0.5 md:gap-1 w-full h-24 md:h-32">
                                     <motion.div
                                         initial={{ height: 0 }}

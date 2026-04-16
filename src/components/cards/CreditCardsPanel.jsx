@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { calculateCardFinancialDetails } from "../../utils/financeCalculations";
+import { calculateCardFinancialDetails, getDaysUntilDue } from "../../utils/financeCalculations";
 import SectionCard from "../common/SectionCard";
 import EmptyState from "../common/EmptyState";
 
@@ -70,20 +70,6 @@ export default function CreditCardsPanel({
     onEditCard,
     activeCard,
 }) {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-
-    const getDaysUntilDue = (dayOfMonth) => {
-        if (!dayOfMonth) return null;
-        const dueThisMonth = new Date(currentYear, currentMonth, dayOfMonth);
-        const candidate = dueThisMonth >= today
-            ? dueThisMonth
-            : new Date(currentYear, currentMonth + 1, dayOfMonth);
-        const diffMs = candidate.setHours(0, 0, 0, 0) - new Date(currentYear, currentMonth, today.getDate()).setHours(0, 0, 0, 0);
-        return Math.round(diffMs / (1000 * 60 * 60 * 24));
-    };
-
     return (
         <SectionCard className="col-span-12 lg:col-span-5 p-4 md:p-6">
             <div className="flex justify-between items-center mb-4 md:mb-6">
@@ -104,6 +90,8 @@ export default function CreditCardsPanel({
                             spentByTx,
                             totalGastosMes,
                             totalDebt,
+                            hasPaymentRegistered,
+                            shouldHideDueAlert,
                         } = calculateCardFinancialDetails(card, spentPerCard);
                         const cardLimit = card.limit || card["límite"] || 0;
                         const percentUsed = cardLimit > 0 ? Math.min((totalDebt / cardLimit) * 100, 100) : 0;
@@ -112,7 +100,7 @@ export default function CreditCardsPanel({
                         const billingDay = card.billingDay || null;
                         const dueDay = card.dueDay || null;
                         const daysUntilDue = getDaysUntilDue(dueDay);
-                        const showDueAlert = daysUntilDue !== null && daysUntilDue <= 5;
+                        const showDueAlert = daysUntilDue !== null && daysUntilDue <= 5 && !shouldHideDueAlert;
                         const dueLabel = daysUntilDue === 0
                             ? "Vence hoy"
                             : daysUntilDue === 1
@@ -164,6 +152,11 @@ export default function CreditCardsPanel({
                                                 <p className="text-[8px] md:text-[9px] text-slate-500 mt-1 font-semibold uppercase tracking-wide">
                                                     {billingDay ? `Corte dia ${billingDay}` : "Corte sin fecha"} {dueDay ? `• Pago dia ${dueDay}` : ""}
                                                 </p>
+                                            )}
+                                            {hasPaymentRegistered && !showDueAlert && (
+                                                <span className="inline-flex mt-1 px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-semibold bg-emerald-100 text-emerald-700">
+                                                    Pago registrado
+                                                </span>
                                             )}
                                             {showDueAlert && (
                                                 <span className={`inline-flex mt-1 px-2 py-0.5 rounded-full text-[8px] md:text-[9px] font-semibold ${dueTone}`}>

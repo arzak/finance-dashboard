@@ -16,9 +16,10 @@ export function exportTransactionsToCsv(rowsToExport) {
         const dateLabel = transactionDate
             ? formatNumericDate(transactionDate)
             : transaction.date || "";
+        const normalizedAmount = Math.abs(parseFloat(transaction.amount) || 0);
         const amount = transaction.type === "ingreso"
-            ? `+${parseFloat(transaction.amount).toFixed(2)}`
-            : `-${parseFloat(transaction.amount).toFixed(2)}`;
+            ? `+${normalizedAmount.toFixed(2)}`
+            : `-${normalizedAmount.toFixed(2)}`;
         const typeLabel = transaction.type === "gasto"
             ? "Gasto"
             : transaction.type === "pago_tarjeta"

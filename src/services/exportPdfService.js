@@ -7,13 +7,21 @@ export async function exportFinancialReportPdf({
     totalIngresos,
     totalGastos,
     totalPagosTarjetas,
+    manualCardPayments = 0,
+    totalPagosAplicados = totalPagosTarjetas,
     totalDeudaTarjetas,
+    cashBeforeCardPayments = totalIngresos - totalGastos,
     efectivoDisponible,
     patrimonioNeto,
     creditCards,
+    cardDetails = [],
     spentPerCard,
     transactions,
     calculateCardFinancialDetails,
+    liquidityAlerts = [],
+    cardsDueSoon = [],
+    paymentPriority = [],
+    currentMonthSpendingInsight = null,
 }) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -51,7 +59,10 @@ export async function exportFinancialReportPdf({
     const summaryData = [
         ["Total Ingresos", `$${totalIngresos.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
         ["Total Gastos", `$${totalGastos.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
-        ["Pagos a Tarjetas", `$${totalPagosTarjetas.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
+        ["Liquidez antes de pagos", `$${cashBeforeCardPayments.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
+        ["Pagos registrados", `$${totalPagosTarjetas.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
+        ["Pagos directos en tarjeta", `$${manualCardPayments.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
+        ["Pagos aplicados al efectivo", `$${totalPagosAplicados.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
         ["Efectivo Disponible", `$${efectivoDisponible.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
         ["Deuda Total Tarjetas", `-$${totalDeudaTarjetas.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
         ["Patrimonio Neto", `$${patrimonioNeto.toLocaleString("en-US", { minimumFractionDigits: 2 })}`],
@@ -73,6 +84,42 @@ export async function exportFinancialReportPdf({
 
     yPos = doc.lastAutoTable.finalY + 15;
 
+    if (yPos > 180) {
+        doc.addPage();
+        yPos = 20;
+    }
+
+    doc.setFillColor(240, 240, 240);
+    doc.rect(14, yPos - 5, pageWidth - 28, 8, "F");
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("ALERTAS Y PRIORIDADES", 18, yPos);
+
+    yPos += 10;
+
+    autoTable(doc, {
+        startY: yPos,
+        head: [["Concepto", "Detalle"]],
+        body: [
+            ["Alertas de liquidez", liquidityAlerts.length ? liquidityAlerts.map((alert) => alert.title).join(" | ") : "Sin alertas"],
+            ["Tarjeta prioritaria", paymentPriority[0] ? paymentPriority[0].name : "Sin deuda pendiente"],
+            ["Vencimientos < 48h", cardsDueSoon.length ? cardsDueSoon.map((card) => `${card.name} (${card.daysUntilDue}d)`).join(" | ") : "Sin vencimientos urgentes"],
+            ["Ritmo de gasto", currentMonthSpendingInsight ? `${currentMonthSpendingInsight.label}: actual $${currentMonthSpendingInsight.currentMonthAmount.toFixed(2)} vs promedio $${currentMonthSpendingInsight.averagePreviousMonths.toFixed(2)}` : "Sin datos"],
+        ],
+        theme: "striped",
+        headStyles: { fillColor: [19, 90, 236], textColor: 255, font: "helvetica", fontStyle: "bold" },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+            0: { cellWidth: 45, font: "helvetica", fontStyle: "bold" },
+            1: { cellWidth: "auto", font: "helvetica" },
+        },
+        styles: { fontSize: 8, overflow: "linebreak" },
+    });
+
+    yPos = doc.lastAutoTable.finalY + 15;
+
     if (creditCards.length > 0) {
         if (yPos > 200) {
             doc.addPage();
@@ -88,30 +135,30 @@ export async function exportFinancialReportPdf({
 
         yPos += 10;
 
-        const cardsData = creditCards.map((card) => {
-            const {
-                initialDebt,
-                payments,
-                totalGastosMes,
-                totalDebt,
-            } = calculateCardFinancialDetails(card, spentPerCard);
-            const cardLimit = card.limit || card["límite"] || 0;
-            const percentUsed = cardLimit > 0 ? Math.min((totalDebt / cardLimit) * 100, 100) : 0;
+        const cardsSource = cardDetails.length ? cardDetails : creditCards.map((card) => ({
+            ...card,
+            ...calculateCardFinancialDetails(card, spentPerCard),
+        }));
+
+        const cardsData = cardsSource.map((card) => {
+            const cardLimit = card.limit || card["lÃ­mite"] || 0;
+            const percentUsed = cardLimit > 0 ? Math.min((card.totalDebt / cardLimit) * 100, 100) : 0;
 
             return [
                 `${card.name} (****${card.lastFour})`,
-                `$${initialDebt.toFixed(2)}`,
-                `$${totalGastosMes.toFixed(2)}`,
-                `$${payments.toFixed(2)}`,
-                `-$${totalDebt.toFixed(2)}`,
+                `$${card.initialDebt.toFixed(2)}`,
+                `$${card.totalGastosMes.toFixed(2)}`,
+                `$${card.payments.toFixed(2)}`,
+                `-$${card.totalDebt.toFixed(2)}`,
                 `$${cardLimit.toLocaleString("en-US", { minimumFractionDigits: 0 })}`,
                 `${percentUsed.toFixed(0)}%`,
+                card.daysUntilDue === null ? "Sin fecha" : `${card.daysUntilDue}d`,
             ];
         });
 
         autoTable(doc, {
             startY: yPos,
-            head: [["Tarjeta", "Deuda Inicial", "Gastos Mes", "Pagos", "Deuda Total", "Limite", "Uso"]],
+            head: [["Tarjeta", "Deuda Inicial", "Gastos Mes", "Pagos", "Deuda Total", "Limite", "Uso", "Vence"]],
             body: cardsData,
             theme: "striped",
             headStyles: { fillColor: [19, 90, 236], textColor: 255, font: "helvetica", fontStyle: "bold", fontSize: 8 },
@@ -119,13 +166,14 @@ export async function exportFinancialReportPdf({
             margin: { left: 14, right: 14 },
             tableWidth: pageWidth - 28,
             columnStyles: {
-                0: { cellWidth: 50, font: "helvetica" },
-                1: { cellWidth: 25, halign: "right", font: "helvetica" },
-                2: { cellWidth: 25, halign: "right", font: "helvetica" },
-                3: { cellWidth: 20, halign: "right", font: "helvetica" },
-                4: { cellWidth: 25, halign: "right", font: "helvetica", fontStyle: "bold" },
-                5: { cellWidth: 25, halign: "right", font: "helvetica" },
-                6: { cellWidth: 20, halign: "right", font: "helvetica" },
+                0: { cellWidth: 42, font: "helvetica" },
+                1: { cellWidth: 22, halign: "right", font: "helvetica" },
+                2: { cellWidth: 22, halign: "right", font: "helvetica" },
+                3: { cellWidth: 18, halign: "right", font: "helvetica" },
+                4: { cellWidth: 22, halign: "right", font: "helvetica", fontStyle: "bold" },
+                5: { cellWidth: 22, halign: "right", font: "helvetica" },
+                6: { cellWidth: 16, halign: "right", font: "helvetica" },
+                7: { cellWidth: 16, halign: "center", font: "helvetica" },
             },
             fontSize: 8,
         });
@@ -218,19 +266,19 @@ export async function exportFinancialReportPdf({
     yPos += 10;
 
     const categoryTotals = {};
-    let totalGastado = 0;
+    let totalGastadoPdf = 0;
     transactions.forEach((transaction) => {
         if (transaction.type === "gasto") {
             const amount = parseFloat(transaction.amount);
             categoryTotals[transaction.category] = (categoryTotals[transaction.category] || 0) + amount;
-            totalGastado += amount;
+            totalGastadoPdf += amount;
         }
     });
 
     const categoryData = Object.entries(categoryTotals)
         .sort(([, amountA], [, amountB]) => amountB - amountA)
         .map(([category, total]) => {
-            const percent = totalGastado > 0 ? (total / totalGastado) * 100 : 0;
+            const percent = totalGastadoPdf > 0 ? (total / totalGastadoPdf) * 100 : 0;
             return [category, `$${total.toFixed(2)}`, `${percent.toFixed(1)}%`];
         });
 

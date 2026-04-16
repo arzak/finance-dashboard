@@ -43,8 +43,8 @@ export default function DeleteTransactionModal({
                             <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-4">
                                 <p className="font-bold text-slate-900 dark:text-white mb-1">{transaction.store}</p>
                                 <p className="text-sm text-slate-500 mb-2">{transaction.category} • {transaction.date}</p>
-                                <p className={`text-lg font-black ${transaction.type === "gasto" ? "text-rose-500" : "text-emerald-500"}`}>
-                                    {transaction.type === "gasto" ? "-" : "+"}${parseFloat(transaction.amount).toFixed(2)}
+                                <p className={`text-lg font-black ${transaction.type === "ingreso" ? "text-emerald-500" : "text-rose-500"}`}>
+                                    {transaction.type === "ingreso" ? "+" : "-"}${parseFloat(transaction.amount).toFixed(2)}
                                 </p>
                             </div>
                         </div>

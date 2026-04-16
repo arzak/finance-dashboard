@@ -96,6 +96,9 @@ export default function EditCreditCardModal({ isOpen, onClose, card, onSave, spe
                                     <span className="block text-xs text-slate-500 font-normal mt-0.5">Total de pagos realizados en el mes</span>
                                 </label>
                                 <input type="number" step="0.01" value={payments} onChange={(event) => setPayments(event.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50" placeholder="0.00" />
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Si este pago no existe como transaccion, tambien se descontara del efectivo disponible.
+                                </p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

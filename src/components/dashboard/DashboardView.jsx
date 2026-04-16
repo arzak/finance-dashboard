@@ -13,6 +13,13 @@ export default function DashboardView({
     saludFinancieraIcon,
     deudaPorcentaje,
     totalDeudaTarjetas,
+    cashBeforeCardPayments,
+    manualCardPayments,
+    totalPagosAplicados,
+    liquidityAlerts,
+    cardsDueSoon,
+    paymentPriority,
+    currentMonthSpendingInsight,
     monthlyTotals,
     maxMonthlyGasto,
     creditCards,
@@ -34,6 +41,12 @@ export default function DashboardView({
     onViewAllTransactions,
 }) {
     const [trendView, setTrendView] = useState("weekly");
+    const priorityCard = paymentPriority?.[0] || null;
+    const spendingTone = currentMonthSpendingInsight?.status === "above"
+        ? "text-rose-600 bg-rose-100"
+        : currentMonthSpendingInsight?.status === "below"
+            ? "text-emerald-700 bg-emerald-100"
+            : "text-slate-600 bg-slate-100";
     const avgMonthlyGasto = monthlyTotals.length
         ? monthlyTotals.reduce((sum, month) => sum + month.gastos, 0) / monthlyTotals.length
         : 0;
@@ -88,6 +101,29 @@ export default function DashboardView({
                             <span className="font-semibold text-slate-700">
                                 ${totalIngresos.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ingresos
                             </span>
+                        </div>
+                        <div className="mt-3 grid grid-cols-1 gap-2 text-[10px] md:text-xs">
+                            <div className="rounded-2xl bg-white/70 px-3 py-2 text-slate-600">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span>Antes de pagos de tarjeta</span>
+                                    <span className="font-semibold text-slate-800">
+                                        ${cashBeforeCardPayments.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="rounded-2xl bg-white/70 px-3 py-2 text-slate-600">
+                                <div className="flex items-center justify-between gap-2">
+                                    <span>Pagos de tarjeta aplicados</span>
+                                    <span className="font-semibold text-rose-600">
+                                        -${totalPagosAplicados.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                                {manualCardPayments > 0 && (
+                                    <p className="mt-1 text-[10px] text-slate-500">
+                                        Incluye ${manualCardPayments.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} registrados directo en la tarjeta.
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -148,16 +184,77 @@ export default function DashboardView({
                         </div>
                     </div>
 
+                    <div className="col-span-12 rounded-[24px] border border-slate-200/80 bg-white px-4 py-4">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500">Atencion inmediata</p>
+                                <p className="text-[10px] md:text-xs text-slate-400">Liquidez, vencimientos y siguiente pago sugerido</p>
+                            </div>
+                            {priorityCard && (
+                                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] md:text-xs font-semibold text-primary">
+                                    Prioridad: {priorityCard.name}
+                                </span>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            {liquidityAlerts?.map((alert) => (
+                                <div
+                                    key={alert.id}
+                                    className={`rounded-2xl px-3 py-3 text-sm ${
+                                        alert.severity === "danger"
+                                            ? "border border-rose-200 bg-rose-50 text-rose-700"
+                                            : "border border-amber-200 bg-amber-50 text-amber-700"
+                                    }`}
+                                >
+                                    <p className="font-semibold">{alert.title}</p>
+                                    <p className="text-xs md:text-sm opacity-90">{alert.message}</p>
+                                </div>
+                            ))}
+                            {cardsDueSoon?.slice(0, 2).map((card) => (
+                                <div key={card.id} className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-3 text-amber-800">
+                                    <p className="font-semibold">{card.name} vence {card.daysUntilDue === 0 ? "hoy" : `en ${card.daysUntilDue} dia${card.daysUntilDue === 1 ? "" : "s"}`}</p>
+                                    <p className="text-xs md:text-sm">Deuda actual: ${card.totalDebt.toFixed(2)}</p>
+                                </div>
+                            ))}
+                            {priorityCard && (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-slate-700">
+                                    <p className="font-semibold">Siguiente tarjeta a priorizar: {priorityCard.name}</p>
+                                    <p className="text-xs md:text-sm">
+                                        {priorityCard.daysUntilDue !== null
+                                            ? `Vence en ${priorityCard.daysUntilDue} dia${priorityCard.daysUntilDue === 1 ? "" : "s"}`
+                                            : "Sin fecha de vencimiento registrada"} y mantiene una deuda de ${priorityCard.totalDebt.toFixed(2)}.
+                                    </p>
+                                </div>
+                            )}
+                            {!liquidityAlerts?.length && !cardsDueSoon?.length && !priorityCard && (
+                                <p className="text-sm text-slate-500">No hay alertas inmediatas por mostrar.</p>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="col-span-12 rounded-[24px] border border-slate-200/80 bg-slate-50/75 px-4 py-4">
                         <div className="flex items-center justify-between gap-3 mb-4">
                             <div>
                                 <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500">Ritmo de gasto reciente</p>
                                 <p className="text-[10px] md:text-xs text-slate-400">Ultimos 6 meses</p>
                             </div>
-                            <span className="text-[10px] md:text-xs font-semibold text-slate-500">
-                                Mes actual destacado
+                            <span className={`text-[10px] md:text-xs font-semibold px-2.5 py-1 rounded-full ${spendingTone}`}>
+                                {currentMonthSpendingInsight?.label || "Mes actual"}
                             </span>
                         </div>
+                        {currentMonthSpendingInsight && (
+                            <div className="mb-4 flex flex-wrap gap-2 text-[10px] md:text-xs">
+                                <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
+                                    Actual ${currentMonthSpendingInsight.currentMonthAmount.toFixed(2)}
+                                </span>
+                                <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-slate-600">
+                                    Promedio ${currentMonthSpendingInsight.averagePreviousMonths.toFixed(2)}
+                                </span>
+                                <span className={`rounded-full px-2.5 py-1 font-semibold ${spendingTone}`}>
+                                    {currentMonthSpendingInsight.deltaAmount >= 0 ? "+" : ""}${currentMonthSpendingInsight.deltaAmount.toFixed(2)}
+                                </span>
+                            </div>
+                        )}
                         <div className="h-24 md:h-28 w-full relative">
                             <div
                                 className="absolute inset-x-1"
@@ -401,8 +498,8 @@ export default function DashboardView({
                                             <p className="md:hidden text-[9px] text-slate-500 truncate">{transaction.category} • {transaction.date}</p>
                                         </div>
                                     </div>
-                                    <p className={`font-bold text-xs md:text-sm flex-shrink-0 ${transaction.type === "gasto" ? "text-rose-500" : "text-emerald-500"} ml-2`}>
-                                        {transaction.type === "gasto" ? "-" : "+"}${parseFloat(transaction.amount).toFixed(2)}
+                                    <p className={`font-bold text-xs md:text-sm flex-shrink-0 ${transaction.type === "ingreso" ? "text-emerald-500" : "text-rose-500"} ml-2`}>
+                                        {transaction.type === "ingreso" ? "+" : "-"}${parseFloat(transaction.amount).toFixed(2)}
                                     </p>
                                 </motion.div>
                             ))}
