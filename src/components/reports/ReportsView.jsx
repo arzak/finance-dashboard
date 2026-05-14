@@ -75,10 +75,21 @@ export default function ReportsView({
             })
             .reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
 
-        return { label, income, expense };
+        return { label, income, expense, savings: income - expense };
     });
 
     const maxValue = Math.max(...monthlyComparison.map((item) => Math.max(item.income, item.expense)), 1);
+    const activeComparisonMonths = monthlyComparison.filter((item) => item.income > 0 || item.expense > 0);
+    const averageMonthlyIncome = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.income, 0) / activeComparisonMonths.length
+        : 0;
+    const averageMonthlyExpense = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.expense, 0) / activeComparisonMonths.length
+        : 0;
+    const averageMonthlySavings = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.savings, 0) / activeComparisonMonths.length
+        : 0;
+    const latestMonthlyMovement = [...monthlyComparison].reverse().find((item) => item.income > 0 || item.expense > 0) || null;
     const formatCompactAmount = (value) => {
         if (value >= 1000) {
             return `$${(value / 1000).toFixed(1)}k`;
@@ -154,6 +165,30 @@ export default function ReportsView({
                 <p className="text-sm font-bold text-emerald-500">Pagos: ${formatCurrency(paymentsValue)}</p>
                 <p className={`text-xs mt-2 font-semibold ${delta >= 0 ? "text-amber-600" : "text-emerald-600"}`}>
                     Diferencia: {delta >= 0 ? "+" : ""}${formatCurrency(delta)}
+                </p>
+            </div>
+        );
+    };
+
+    const MonthlyFlowTooltip = ({ active, payload, label }) => {
+        if (!active || !payload?.length) {
+            return null;
+        }
+
+        const incomeValue = payload.find((item) => item.dataKey === "income")?.value || 0;
+        const expenseValue = payload.find((item) => item.dataKey === "expense")?.value || 0;
+        const savingsValue = payload.find((item) => item.dataKey === "savings")?.value || 0;
+
+        return (
+            <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{label}</p>
+                <p className="text-sm font-bold text-emerald-500">Ingresos: ${formatCurrency(incomeValue)}</p>
+                <p className="text-sm font-bold text-rose-500">Gastos: ${formatCurrency(expenseValue)}</p>
+                <p className={`text-sm font-bold ${savingsValue >= 0 ? "text-blue-500" : "text-amber-600"}`}>
+                    Ahorro: {savingsValue >= 0 ? "+" : ""}${formatCurrency(savingsValue)}
+                </p>
+                <p className={`text-xs mt-2 font-semibold ${savingsValue >= 0 ? "text-slate-700 dark:text-slate-200" : "text-rose-600"}`}>
+                    Flujo neto: {savingsValue >= 0 ? "+" : ""}${formatCurrency(savingsValue)}
                 </p>
             </div>
         );
@@ -308,8 +343,11 @@ export default function ReportsView({
                     transition={{ delay: 0.1 }}
                     className=""
                 >
-                    <div className="flex justify-between items-center mb-4 md:mb-6">
-                        <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider">Ingresos vs Gastos</h3>
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4 md:mb-6">
+                        <div>
+                            <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider">Ingresos y Gastos por Mes</h3>
+                            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Comparativo mensual de movimiento real, sin acumulado</p>
+                        </div>
                         <div className="hidden sm:flex gap-4">
                             <div className="flex items-center gap-1.5">
                                 <div className="size-2 rounded-full bg-emerald-500" />
@@ -319,39 +357,118 @@ export default function ReportsView({
                                 <div className="size-2 rounded-full bg-rose-500" />
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Gastos</span>
                             </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className="size-2 rounded-full bg-blue-500" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Ahorro</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="h-32 md:h-44 flex items-end justify-between gap-2 md:gap-4 overflow-x-auto pb-2">
-                        {monthlyComparison.map((item, index) => (
-                            <div key={index} className="flex-1 flex flex-col items-center gap-1 h-full justify-end min-w-[30px] md:min-w-[40px]">
-                                <div className="flex items-center justify-center gap-1 md:gap-2 min-h-[20px] md:min-h-[24px] mb-1 text-[8px] md:text-[10px] font-bold">
-                                    {item.income > 0 && (
-                                        <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-emerald-600">
-                                            {formatCompactAmount(item.income)}
-                                        </span>
-                                    )}
-                                    {item.expense > 0 && (
-                                        <span className="rounded-full bg-rose-50 px-1.5 py-0.5 text-rose-600">
-                                            {formatCompactAmount(item.expense)}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex items-end gap-0.5 md:gap-1 w-full h-24 md:h-32">
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${(item.income / maxValue) * 100}%` }}
-                                        className="flex-1 bg-emerald-500/80 rounded-t-sm"
-                                    />
-                                    <motion.div
-                                        initial={{ height: 0 }}
-                                        animate={{ height: `${(item.expense / maxValue) * 100}%` }}
-                                        className="flex-1 bg-rose-500/80 rounded-t-sm"
-                                    />
-                                </div>
-                                <span className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase">{item.label}</span>
-                            </div>
-                        ))}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio ingresos</p>
+                            <p className="text-sm md:text-base font-black text-emerald-500">${formatCurrency(averageMonthlyIncome, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio gastos</p>
+                            <p className="text-sm md:text-base font-black text-rose-500">${formatCurrency(averageMonthlyExpense, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio ahorro</p>
+                            <p className={`text-sm md:text-base font-black ${averageMonthlySavings >= 0 ? "text-blue-500" : "text-amber-600"}`}>
+                                {averageMonthlySavings >= 0 ? "+" : ""}${formatCurrency(averageMonthlySavings, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Ultimo mes con movimiento</p>
+                            <p className="text-sm md:text-base font-black text-slate-900 dark:text-white">{latestMonthlyMovement?.label || "Sin datos"}</p>
+                            {latestMonthlyMovement && (
+                                <p className="mt-1 text-xs text-slate-500">
+                                    Neto {latestMonthlyMovement.income - latestMonthlyMovement.expense >= 0 ? "+" : ""}${formatCurrency(latestMonthlyMovement.income - latestMonthlyMovement.expense)}
+                                </p>
+                            )}
+                        </div>
                     </div>
+
+                    <div className="h-64 md:h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={monthlyComparison} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="incomeArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.24} />
+                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+                                    </linearGradient>
+                                    <linearGradient id="expenseArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.18} />
+                                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.02} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
+                                <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                <YAxis
+                                    domain={[0, maxValue]}
+                                    tick={{ fontSize: 12, fill: "#64748b" }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tickFormatter={(value) => formatCompactAmount(value)}
+                                />
+                                <Tooltip content={<MonthlyFlowTooltip />} />
+                                <Area
+                                    type="monotone"
+                                    dataKey="income"
+                                    stroke="#10b981"
+                                    strokeWidth={0}
+                                    fill="url(#incomeArea)"
+                                    fillOpacity={1}
+                                    animationDuration={1200}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="expense"
+                                    stroke="#f43f5e"
+                                    strokeWidth={0}
+                                    fill="url(#expenseArea)"
+                                    fillOpacity={1}
+                                    animationDuration={1200}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="income"
+                                    stroke="#10b981"
+                                    strokeWidth={3}
+                                    dot={{ r: 4, fill: "#10b981", strokeWidth: 0 }}
+                                    activeDot={{ r: 6 }}
+                                    animationDuration={1200}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="expense"
+                                    stroke="#f43f5e"
+                                    strokeWidth={3}
+                                    dot={{ r: 4, fill: "#f43f5e", strokeWidth: 0 }}
+                                    activeDot={{ r: 6 }}
+                                    animationDuration={1200}
+                                />
+                                <Line
+                                    type="monotone"
+                                    dataKey="savings"
+                                    stroke="#3b82f6"
+                                    strokeWidth={3}
+                                    dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
+                                    activeDot={{ r: 6 }}
+                                    animationDuration={1200}
+                                />
+                            </ComposedChart>
+                        </ResponsiveContainer>
+                    </div>
+
+                    {activeComparisonMonths.length === 0 && (
+                        <EmptyState
+                            icon="show_chart"
+                            title="Sin movimientos mensuales"
+                            description="Agrega ingresos y gastos para ver la comparativa mensual en linea"
+                            className="py-6"
+                        />
+                    )}
                     </motion.div>
                 </SectionCard>
 
