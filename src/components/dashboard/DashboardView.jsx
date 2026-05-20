@@ -75,8 +75,8 @@ export default function DashboardView({
                     <div className="col-span-12 md:col-span-6 rounded-[24px] p-4 md:p-5 bg-gradient-to-br from-emerald-50 via-white to-emerald-100/70 border border-emerald-100">
                         <div className="flex justify-between items-start gap-3 mb-3">
                             <div className="min-w-0 flex-1">
-                                <span className="text-slate-500 font-medium uppercase tracking-wider text-[10px] md:text-xs block">Efectivo Disponible</span>
-                                <span className="text-[10px] md:text-xs text-slate-400">Lo que tienes disponible en efectivo o banco</span>
+                                <span className="text-slate-500 font-medium uppercase tracking-wider text-[10px] md:text-xs block">Saldo Actual de Caja</span>
+                                <span className="text-[10px] md:text-xs text-slate-400">Dinero en efectivo o banco antes de apartar la deuda pendiente</span>
                             </div>
                             {(() => {
                                 const isPositive = efectivoDisponible >= 0;
@@ -93,10 +93,18 @@ export default function DashboardView({
                         <div className="text-4xl md:text-5xl font-black tracking-tighter text-emerald-600 leading-none truncate">
                             ${efectivoDisponible.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
+                        <div className="mt-3 rounded-2xl bg-white/80 px-3 py-2 text-[10px] md:text-xs text-slate-600">
+                            <div className="flex items-center justify-between gap-2">
+                                <span>Dinero libre real despues de deuda</span>
+                                <span className={`font-semibold ${patrimonioNeto >= 0 ? "text-slate-800" : "text-rose-600"}`}>
+                                    ${patrimonioNeto.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </div>
                         <div className="mt-4 pt-3 border-t border-emerald-100 flex items-center justify-between gap-3 text-[11px] md:text-xs text-slate-500">
                             <span className="inline-flex items-center gap-1.5">
                                 <span className="size-2 rounded-full bg-emerald-500" />
-                                Liquidez actual
+                                Caja operativa actual
                             </span>
                             <span className="font-semibold text-slate-700">
                                 ${totalIngresos.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} ingresos
@@ -123,6 +131,9 @@ export default function DashboardView({
                                         Incluye ${manualCardPayments.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} registrados directo en la tarjeta.
                                     </p>
                                 )}
+                                <p className="mt-1 text-[10px] text-slate-500">
+                                    Este saldo todavia no descuenta la deuda pendiente de tus tarjetas.
+                                </p>
                             </div>
                         </div>
                     </div>

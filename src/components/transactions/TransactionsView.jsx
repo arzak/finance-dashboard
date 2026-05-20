@@ -4,12 +4,14 @@ import EmptyState from "../common/EmptyState";
 import SectionCard from "../common/SectionCard";
 import { formatCurrency } from "../../utils/formatters";
 import { getTransactionDate, getTransactionMonthKey } from "../../utils/transactionDates";
+import { isCreditCardExpense } from "../../utils/financeCalculations";
 
 const MONTHS_LABEL = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const getSignedAmount = (transaction) => Math.abs(parseFloat(transaction.amount) || 0);
 
 export default function TransactionsView({
     transactions,
+    creditCards,
     txSearch,
     setTxSearch,
     txFilterType,
@@ -56,17 +58,34 @@ export default function TransactionsView({
     const currentPage = txPage >= totalPages ? 0 : txPage;
     const paginatedFiltered = filtered.slice(currentPage * txPerPage, (currentPage + 1) * txPerPage);
 
-    const totalFiltrado = filtered.reduce((accumulator, transaction) => {
-        if (transaction.type === "ingreso") {
-            return accumulator + getSignedAmount(transaction);
+    const totalIngresosFiltrados = filtered
+        .filter((transaction) => transaction.type === "ingreso")
+        .reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
+    const totalGastosFiltrados = filtered
+        .filter((transaction) => transaction.type === "gasto")
+        .reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
+    const totalPagosFiltrados = filtered
+        .filter((transaction) => transaction.type === "pago_tarjeta")
+        .reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
+    const totalComprasCreditoFiltradas = filtered.reduce((accumulator, transaction) => {
+        if (!isCreditCardExpense(transaction, creditCards)) {
+            return accumulator;
         }
 
-        return accumulator - getSignedAmount(transaction);
+        return accumulator + getSignedAmount(transaction);
     }, 0);
+    const totalSalidasEfectivoFiltradas = filtered.reduce((accumulator, transaction) => {
+        if (transaction.type !== "gasto") {
+            return accumulator;
+        }
 
-    const totalIngresosFiltrados = filtered.filter((transaction) => transaction.type === "ingreso").reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
-    const totalGastosFiltrados = filtered.filter((transaction) => transaction.type === "gasto").reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
-    const totalPagosFiltrados = filtered.filter((transaction) => transaction.type === "pago_tarjeta").reduce((accumulator, transaction) => accumulator + getSignedAmount(transaction), 0);
+        if (isCreditCardExpense(transaction, creditCards)) {
+            return accumulator;
+        }
+
+        return accumulator + getSignedAmount(transaction);
+    }, 0);
+    const flujoCajaRealFiltrado = totalIngresosFiltrados - totalSalidasEfectivoFiltradas - totalPagosFiltrados;
 
     const resetFilters = () => {
         setTxSearch("");
@@ -141,12 +160,48 @@ export default function TransactionsView({
                 </div>
             </SectionCard>
 
-            <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 md:gap-4">
+            <SectionCard className="p-4 md:p-5">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                        <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-slate-500">Resumen del periodo visible</p>
+                        <p className="text-[11px] md:text-xs text-slate-400 mt-1">
+                            Separamos flujo real de caja vs compras a credito para que coincida con el panel.
+                        </p>
+                    </div>
+                    <div className="hidden md:flex items-center gap-2 text-[10px] text-slate-400">
+                        <span className="size-2 rounded-full bg-emerald-500" />
+                        Caja real
+                    </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px] md:text-xs">
+                    <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-emerald-800">
+                        <span className="block font-semibold">Flujo de caja real</span>
+                        <span className="block mt-1">
+                            Ingresos menos gastos pagados en efectivo/debito y pagos de tarjeta.
+                        </span>
+                    </div>
+                    <div className="rounded-2xl bg-blue-50 border border-blue-100 px-3 py-2 text-blue-800">
+                        <span className="block font-semibold">Compras a credito</span>
+                        <span className="block mt-1">
+                            Aumentan la deuda, pero no bajan tu caja hasta que registras el pago.
+                        </span>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 text-slate-600">
+                        <span className="block font-semibold">Gasto total registrado</span>
+                        <span className="block mt-1">
+                            Incluye tanto salidas de efectivo como compras hechas con tarjeta de credito.
+                        </span>
+                    </div>
+                </div>
+            </SectionCard>
+
+            <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-5 md:gap-4">
                 {[
                     { label: "Ingresos", value: totalIngresosFiltrados, color: "emerald", icon: "trending_up" },
-                    { label: "Gastos", value: totalGastosFiltrados, color: "rose", icon: "trending_down" },
-                    { label: "Pagos", value: totalPagosFiltrados, color: "blue", icon: "credit_card" },
-                    { label: "Balance Total (Flujo de Caja)", value: totalFiltrado, color: totalFiltrado >= 0 ? "emerald" : "rose", icon: totalFiltrado >= 0 ? "account_balance_wallet" : "warning" },
+                    { label: "Salidas de Efectivo", value: totalSalidasEfectivoFiltradas, color: "rose", icon: "payments" },
+                    { label: "Compras a Credito", value: totalComprasCreditoFiltradas, color: "blue", icon: "credit_card" },
+                    { label: "Pagos de Tarjeta", value: totalPagosFiltrados, color: "indigo", icon: "credit_score" },
+                    { label: "Flujo de Caja Real", value: flujoCajaRealFiltrado, color: flujoCajaRealFiltrado >= 0 ? "emerald" : "rose", icon: flujoCajaRealFiltrado >= 0 ? "account_balance_wallet" : "warning" },
                 ].map(({ label, value, color, icon }) => (
                     <div key={label} className="bg-white dark:bg-slate-900 rounded-2xl p-3 md:p-5 border border-slate-100 dark:border-slate-800/50 shadow-sm flex-shrink-0 w-32 md:w-auto">
                         <div className="flex items-center gap-1 md:gap-2 mb-1">
@@ -189,6 +244,11 @@ export default function TransactionsView({
                             <span className="hidden sm:inline">CSV</span> ({filtered.length})
                         </button>
                     </div>
+                </div>
+                <div className="px-4 md:px-6 py-3 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800 text-[10px] md:text-xs text-slate-500">
+                    Gasto total registrado en la lista: <span className="font-semibold text-slate-700 dark:text-slate-300">${formatCurrency(totalGastosFiltrados)}</span>.
+                    De ese total, <span className="font-semibold text-rose-600">${formatCurrency(totalSalidasEfectivoFiltradas)}</span> ya salio de caja y
+                    <span className="font-semibold text-blue-600"> ${formatCurrency(totalComprasCreditoFiltradas)}</span> sigue como deuda hasta su pago.
                 </div>
 
                 {filtered.length === 0 ? (

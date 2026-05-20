@@ -26,6 +26,7 @@ export default function ReportsView({
     currentMonthSpendingInsight,
 }) {
     const [creditRange, setCreditRange] = useState("year");
+    const [monthlyChartMode, setMonthlyChartMode] = useState("simple");
     const today = new Date();
 
     const totalIngresos = transactions
@@ -75,21 +76,89 @@ export default function ReportsView({
             })
             .reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
 
-        return { label, income, expense, savings: income - expense };
+        const credit = transactions
+            .filter((transaction) => {
+                if (!isCreditCardExpense(transaction, creditCards)) return false;
+                const date = getTransactionDate(transaction);
+                return date && date.getFullYear() === year && date.getMonth() === month;
+            })
+            .reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
+
+        const cashOut = transactions
+            .filter((transaction) => {
+                if (transaction.type !== "gasto") return false;
+                if (isCreditCardExpense(transaction, creditCards)) return false;
+                const date = getTransactionDate(transaction);
+                return date && date.getFullYear() === year && date.getMonth() === month;
+            })
+            .reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
+
+        const cardPayments = transactions
+            .filter((transaction) => {
+                if (transaction.type !== "pago_tarjeta") return false;
+                const date = getTransactionDate(transaction);
+                return date && date.getFullYear() === year && date.getMonth() === month;
+            })
+            .reduce((accumulator, transaction) => accumulator + parseFloat(transaction.amount), 0);
+
+        const savings = income - expense;
+        const realCashFlow = income - cashOut - cardPayments;
+
+        return {
+            label,
+            income,
+            expense,
+            cashOut,
+            credit,
+            cardPayments,
+            savings,
+            realCashFlow,
+        };
     });
 
-    const maxValue = Math.max(...monthlyComparison.map((item) => Math.max(item.income, item.expense)), 1);
-    const activeComparisonMonths = monthlyComparison.filter((item) => item.income > 0 || item.expense > 0);
+    const monthlyComparisonExtremes = monthlyComparison.flatMap((item) => ([
+        item.income,
+        item.expense,
+        item.cashOut,
+        item.credit,
+        item.cardPayments,
+        item.savings,
+        item.realCashFlow,
+    ]));
+    const maxValue = Math.max(...monthlyComparisonExtremes, 1);
+    const minValue = Math.min(...monthlyComparisonExtremes, 0);
+    const activeComparisonMonths = monthlyComparison.filter((item) =>
+        item.income > 0 ||
+        item.expense > 0 ||
+        item.cashOut > 0 ||
+        item.credit > 0 ||
+        item.cardPayments > 0,
+    );
     const averageMonthlyIncome = activeComparisonMonths.length > 0
         ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.income, 0) / activeComparisonMonths.length
         : 0;
-    const averageMonthlyExpense = activeComparisonMonths.length > 0
-        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.expense, 0) / activeComparisonMonths.length
+    const averageMonthlyCashOut = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.cashOut, 0) / activeComparisonMonths.length
+        : 0;
+    const averageMonthlyCredit = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.credit, 0) / activeComparisonMonths.length
+        : 0;
+    const averageMonthlyCardPayments = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.cardPayments, 0) / activeComparisonMonths.length
         : 0;
     const averageMonthlySavings = activeComparisonMonths.length > 0
         ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.savings, 0) / activeComparisonMonths.length
         : 0;
-    const latestMonthlyMovement = [...monthlyComparison].reverse().find((item) => item.income > 0 || item.expense > 0) || null;
+    const averageMonthlyRealCashFlow = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.realCashFlow, 0) / activeComparisonMonths.length
+        : 0;
+    const latestMonthlyMovement = [...monthlyComparison].reverse().find((item) =>
+        item.income > 0 ||
+        item.expense > 0 ||
+        item.cashOut > 0 ||
+        item.credit > 0 ||
+        item.cardPayments > 0,
+    ) || null;
     const formatCompactAmount = (value) => {
         if (value >= 1000) {
             return `$${(value / 1000).toFixed(1)}k`;
@@ -176,19 +245,27 @@ export default function ReportsView({
         }
 
         const incomeValue = payload.find((item) => item.dataKey === "income")?.value || 0;
-        const expenseValue = payload.find((item) => item.dataKey === "expense")?.value || 0;
+        const cashOutValue = payload.find((item) => item.dataKey === "cashOut")?.value || 0;
+        const creditValue = payload.find((item) => item.dataKey === "credit")?.value || 0;
+        const cardPaymentsValue = payload.find((item) => item.dataKey === "cardPayments")?.value || 0;
+        const realCashFlowValue = payload.find((item) => item.dataKey === "realCashFlow")?.value || 0;
         const savingsValue = payload.find((item) => item.dataKey === "savings")?.value || 0;
 
         return (
             <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700">
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">{label}</p>
                 <p className="text-sm font-bold text-emerald-500">Ingresos: ${formatCurrency(incomeValue)}</p>
-                <p className="text-sm font-bold text-rose-500">Gastos: ${formatCurrency(expenseValue)}</p>
+                <p className="text-sm font-bold text-rose-500">Salidas de efectivo: ${formatCurrency(cashOutValue)}</p>
+                <p className="text-sm font-bold text-blue-500">Compras a credito: ${formatCurrency(creditValue)}</p>
+                <p className="text-sm font-bold text-indigo-500">Pagos de tarjeta: ${formatCurrency(cardPaymentsValue)}</p>
+                <p className={`text-sm font-bold ${realCashFlowValue >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    Flujo real: {realCashFlowValue >= 0 ? "+" : ""}${formatCurrency(realCashFlowValue)}
+                </p>
                 <p className={`text-sm font-bold ${savingsValue >= 0 ? "text-blue-500" : "text-amber-600"}`}>
                     Ahorro: {savingsValue >= 0 ? "+" : ""}${formatCurrency(savingsValue)}
                 </p>
-                <p className={`text-xs mt-2 font-semibold ${savingsValue >= 0 ? "text-slate-700 dark:text-slate-200" : "text-rose-600"}`}>
-                    Flujo neto: {savingsValue >= 0 ? "+" : ""}${formatCurrency(savingsValue)}
+                <p className="text-xs mt-2 font-semibold text-slate-600 dark:text-slate-300">
+                    Gasto total registrado: ${formatCurrency(cashOutValue + creditValue)}
                 </p>
             </div>
         );
@@ -345,32 +422,74 @@ export default function ReportsView({
                 >
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4 md:mb-6">
                         <div>
-                            <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider">Ingresos y Gastos por Mes</h3>
-                            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Comparativo mensual de movimiento real, sin acumulado</p>
+                            <h3 className="text-xs md:text-sm font-bold text-slate-500 uppercase tracking-wider">Indicadores Mensuales de Caja y Credito</h3>
+                            <p className="text-[10px] md:text-xs text-slate-400 mt-1">Comparativo mensual de ingresos, caja real, credito, pagos y ahorro</p>
                         </div>
-                        <div className="hidden sm:flex gap-4">
+                        <div className="inline-flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1 self-start">
+                            {[
+                                { value: "simple", label: "Simple" },
+                                { value: "full", label: "Completa" },
+                            ].map((option) => (
+                                <button
+                                    key={option.value}
+                                    onClick={() => setMonthlyChartMode(option.value)}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                                        monthlyChartMode === option.value
+                                            ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm"
+                                            : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="hidden sm:flex flex-wrap gap-4">
                             <div className="flex items-center gap-1.5">
                                 <div className="size-2 rounded-full bg-emerald-500" />
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Ingresos</span>
                             </div>
+                            {monthlyChartMode === "full" && (
+                                <>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="size-2 rounded-full bg-rose-500" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Salidas efectivo</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="size-2 rounded-full bg-blue-500" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Compras credito</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="size-2 rounded-full bg-indigo-500" />
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">Pagos tarjeta</span>
+                                    </div>
+                                </>
+                            )}
                             <div className="flex items-center gap-1.5">
-                                <div className="size-2 rounded-full bg-rose-500" />
-                                <span className="text-[10px] font-bold text-slate-400 uppercase">Gastos</span>
+                                <div className="size-2 rounded-full bg-emerald-700" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase">Flujo real</span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <div className="size-2 rounded-full bg-blue-500" />
+                                <div className="size-2 rounded-full bg-sky-500" />
                                 <span className="text-[10px] font-bold text-slate-400 uppercase">Ahorro</span>
                             </div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-4">
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <p className="text-[10px] uppercase font-bold text-slate-400">Promedio ingresos</p>
                             <p className="text-sm md:text-base font-black text-emerald-500">${formatCurrency(averageMonthlyIncome, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         </div>
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio gastos</p>
-                            <p className="text-sm md:text-base font-black text-rose-500">${formatCurrency(averageMonthlyExpense, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio caja</p>
+                            <p className="text-sm md:text-base font-black text-rose-500">${formatCurrency(averageMonthlyCashOut, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio credito</p>
+                            <p className="text-sm md:text-base font-black text-blue-500">${formatCurrency(averageMonthlyCredit, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio pagos</p>
+                            <p className="text-sm md:text-base font-black text-indigo-500">${formatCurrency(averageMonthlyCardPayments, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
                         </div>
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <p className="text-[10px] uppercase font-bold text-slate-400">Promedio ahorro</p>
@@ -379,11 +498,17 @@ export default function ReportsView({
                             </p>
                         </div>
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                            <p className="text-[10px] uppercase font-bold text-slate-400">Promedio flujo real</p>
+                            <p className={`text-sm md:text-base font-black ${averageMonthlyRealCashFlow >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                {averageMonthlyRealCashFlow >= 0 ? "+" : ""}${formatCurrency(averageMonthlyRealCashFlow, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 xl:col-span-1">
                             <p className="text-[10px] uppercase font-bold text-slate-400">Ultimo mes con movimiento</p>
                             <p className="text-sm md:text-base font-black text-slate-900 dark:text-white">{latestMonthlyMovement?.label || "Sin datos"}</p>
                             {latestMonthlyMovement && (
                                 <p className="mt-1 text-xs text-slate-500">
-                                    Neto {latestMonthlyMovement.income - latestMonthlyMovement.expense >= 0 ? "+" : ""}${formatCurrency(latestMonthlyMovement.income - latestMonthlyMovement.expense)}
+                                    Flujo real {latestMonthlyMovement.realCashFlow >= 0 ? "+" : ""}${formatCurrency(latestMonthlyMovement.realCashFlow)}
                                 </p>
                             )}
                         </div>
@@ -397,15 +522,18 @@ export default function ReportsView({
                                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.24} />
                                         <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
                                     </linearGradient>
-                                    <linearGradient id="expenseArea" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.18} />
+                                    <linearGradient id="cashOutArea" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.16} />
                                         <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.02} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.5} />
                                 <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#64748b" }} axisLine={false} tickLine={false} />
                                 <YAxis
-                                    domain={[0, maxValue]}
+                                    domain={[
+                                        minValue < 0 ? Math.floor(minValue * 1.1) : 0,
+                                        Math.ceil(maxValue * 1.1),
+                                    ]}
                                     tick={{ fontSize: 12, fill: "#64748b" }}
                                     axisLine={false}
                                     tickLine={false}
@@ -421,15 +549,17 @@ export default function ReportsView({
                                     fillOpacity={1}
                                     animationDuration={1200}
                                 />
-                                <Area
-                                    type="monotone"
-                                    dataKey="expense"
-                                    stroke="#f43f5e"
-                                    strokeWidth={0}
-                                    fill="url(#expenseArea)"
-                                    fillOpacity={1}
-                                    animationDuration={1200}
-                                />
+                                {monthlyChartMode === "full" && (
+                                    <Area
+                                        type="monotone"
+                                        dataKey="cashOut"
+                                        stroke="#f43f5e"
+                                        strokeWidth={0}
+                                        fill="url(#cashOutArea)"
+                                        fillOpacity={1}
+                                        animationDuration={1200}
+                                    />
+                                )}
                                 <Line
                                     type="monotone"
                                     dataKey="income"
@@ -439,21 +569,53 @@ export default function ReportsView({
                                     activeDot={{ r: 6 }}
                                     animationDuration={1200}
                                 />
+                                {monthlyChartMode === "full" && (
+                                    <>
+                                        <Line
+                                            type="monotone"
+                                            dataKey="cashOut"
+                                            stroke="#f43f5e"
+                                            strokeWidth={3}
+                                            dot={{ r: 4, fill: "#f43f5e", strokeWidth: 0 }}
+                                            activeDot={{ r: 6 }}
+                                            animationDuration={1200}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="credit"
+                                            stroke="#3b82f6"
+                                            strokeWidth={2.5}
+                                            dot={{ r: 3.5, fill: "#3b82f6", strokeWidth: 0 }}
+                                            activeDot={{ r: 5 }}
+                                            animationDuration={1200}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="cardPayments"
+                                            stroke="#6366f1"
+                                            strokeWidth={2.5}
+                                            dot={{ r: 3.5, fill: "#6366f1", strokeWidth: 0 }}
+                                            activeDot={{ r: 5 }}
+                                            animationDuration={1200}
+                                        />
+                                    </>
+                                )}
                                 <Line
                                     type="monotone"
-                                    dataKey="expense"
-                                    stroke="#f43f5e"
+                                    dataKey="realCashFlow"
+                                    stroke="#047857"
                                     strokeWidth={3}
-                                    dot={{ r: 4, fill: "#f43f5e", strokeWidth: 0 }}
+                                    strokeDasharray="6 4"
+                                    dot={{ r: 4, fill: "#047857", strokeWidth: 0 }}
                                     activeDot={{ r: 6 }}
                                     animationDuration={1200}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="savings"
-                                    stroke="#3b82f6"
+                                    stroke="#0ea5e9"
                                     strokeWidth={3}
-                                    dot={{ r: 4, fill: "#3b82f6", strokeWidth: 0 }}
+                                    dot={{ r: 4, fill: "#0ea5e9", strokeWidth: 0 }}
                                     activeDot={{ r: 6 }}
                                     animationDuration={1200}
                                 />

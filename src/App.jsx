@@ -401,6 +401,7 @@ function App() {
                     <Suspense fallback={<ViewFallback label="Cargando transacciones..." />}>
                         <TransactionsView
                             transactions={transactions}
+                            creditCards={creditCards}
                             txSearch={txSearch}
                             setTxSearch={setTxSearch}
                             txFilterType={txFilterType}
