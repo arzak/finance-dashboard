@@ -137,6 +137,9 @@ export default function ReportsView({
     const averageMonthlyIncome = activeComparisonMonths.length > 0
         ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.income, 0) / activeComparisonMonths.length
         : 0;
+    const averageMonthlyExpense = activeComparisonMonths.length > 0
+        ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.expense, 0) / activeComparisonMonths.length
+        : 0;
     const averageMonthlyCashOut = activeComparisonMonths.length > 0
         ? activeComparisonMonths.reduce((accumulator, item) => accumulator + item.cashOut, 0) / activeComparisonMonths.length
         : 0;
@@ -860,8 +863,8 @@ export default function ReportsView({
                 <FinancialProjections
                     efectivoTotal={efectivoDisponible}
                     deudaTotalTarjetas={totalDeudaTarjetas}
-                    gastosMensualesPromedio={totalGastosReales}
-                    ingresoMensualEstimado={totalIngresos}
+                    gastosMensualesPromedio={averageMonthlyExpense}
+                    ingresoMensualEstimado={averageMonthlyIncome}
                 />
             </Suspense>
         </div>
