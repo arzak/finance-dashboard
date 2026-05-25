@@ -9,6 +9,23 @@ import { isCreditCardExpense } from "../../utils/financeCalculations";
 const MONTHS_LABEL = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const getSignedAmount = (transaction) => Math.abs(parseFloat(transaction.amount) || 0);
 
+const getPaginationRange = (currentPage, totalPages) => {
+    const range = [];
+    const delta = 1;
+    for (let i = 0; i < totalPages; i++) {
+        if (
+            i === 0 ||
+            i === totalPages - 1 ||
+            (i >= currentPage - delta && i <= currentPage + delta)
+        ) {
+            range.push(i);
+        } else if (range[range.length - 1] !== "...") {
+            range.push("...");
+        }
+    }
+    return range;
+};
+
 export default function TransactionsView({
     transactions,
     creditCards,
@@ -331,18 +348,27 @@ export default function TransactionsView({
                                         Anterior
                                     </button>
                                     <div className="hidden sm:flex items-center gap-1">
-                                        {Array.from({ length: totalPages }, (_, page) => page).map((page) => (
-                                            <button
-                                                key={page}
-                                                onClick={() => setTxPage(page)}
-                                                className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all text-xs md:text-sm font-medium ${page === currentPage
-                                                    ? "bg-primary text-white shadow-md shadow-primary/30"
-                                                    : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                                    }`}
-                                            >
-                                                {page + 1}
-                                            </button>
-                                        ))}
+                                        {getPaginationRange(currentPage, totalPages).map((item, index) => {
+                                            if (item === "...") {
+                                                return (
+                                                    <span key={`ellipsis-${index}`} className="px-2 text-slate-400 dark:text-slate-500 font-medium text-xs md:text-sm">
+                                                        ...
+                                                    </span>
+                                                );
+                                            }
+                                            return (
+                                                <button
+                                                    key={item}
+                                                    onClick={() => setTxPage(item)}
+                                                    className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all text-xs md:text-sm font-medium ${item === currentPage
+                                                        ? "bg-primary text-white shadow-md shadow-primary/30"
+                                                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                        }`}
+                                                >
+                                                    {item + 1}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
                                     <button
                                         onClick={() => setTxPage((page) => Math.min(totalPages - 1, page + 1))}

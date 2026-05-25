@@ -4,6 +4,23 @@ import CreditCardsPanel from "../cards/CreditCardsPanel";
 import EmptyState from "../common/EmptyState";
 import SectionCard from "../common/SectionCard";
 
+const getPaginationRange = (currentPage, totalPages) => {
+    const range = [];
+    const delta = 1;
+    for (let i = 0; i < totalPages; i++) {
+        if (
+            i === 0 ||
+            i === totalPages - 1 ||
+            (i >= currentPage - delta && i <= currentPage + delta)
+        ) {
+            range.push(i);
+        } else if (range[range.length - 1] !== "...") {
+            range.push("...");
+        }
+    }
+    return range;
+};
+
 export default function DashboardView({
     efectivoDisponible,
     totalIngresos,
@@ -533,18 +550,27 @@ export default function DashboardView({
                                 Anterior
                             </button>
                             <div className="hidden sm:flex items-center gap-1">
-                                {Array.from({ length: Math.ceil(transactions.length / recentPerPage) }, (_, index) => index).map((index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => setRecentPage(index)}
-                                        className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all text-xs md:text-sm font-medium ${index === recentPage
-                                            ? "bg-primary text-white shadow-md shadow-primary/30"
-                                            : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                                            }`}
-                                    >
-                                        {index + 1}
-                                    </button>
-                                ))}
+                                {getPaginationRange(recentPage, Math.ceil(transactions.length / recentPerPage)).map((item, index) => {
+                                    if (item === "...") {
+                                        return (
+                                            <span key={`ellipsis-${index}`} className="px-2 text-slate-400 dark:text-slate-500 font-medium text-xs md:text-sm">
+                                                ...
+                                            </span>
+                                        );
+                                    }
+                                    return (
+                                        <button
+                                            key={item}
+                                            onClick={() => setRecentPage(item)}
+                                            className={`w-7 h-7 md:w-8 md:h-8 rounded-lg transition-all text-xs md:text-sm font-medium ${item === recentPage
+                                                ? "bg-primary text-white shadow-md shadow-primary/30"
+                                                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                                }`}
+                                        >
+                                            {item + 1}
+                                        </button>
+                                    );
+                                })}
                             </div>
                             <button
                                 onClick={() => setRecentPage((page) => Math.min(Math.ceil(transactions.length / recentPerPage) - 1, page + 1))}
