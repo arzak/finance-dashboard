@@ -10,6 +10,7 @@ import {
     where,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { parseLocalDate } from "../utils/transactionDates";
 
 const LEGACY_LIMIT_KEY = "l\u00edmite";
 
@@ -83,18 +84,20 @@ export async function addCardPayment(userId, cardId, amount, metadata = {}) {
         payments: increment(amount),
     });
 
+    const { customDate, ...metadataData } = metadata;
+
     await addDoc(collection(db, "transactions"), {
-        store: metadata.store || "Pago a tarjeta",
-        category: metadata.category || "Transferencia",
-        paymentMethod: metadata.paymentMethod || "Efectivo",
+        store: metadataData.store || "Pago a tarjeta",
+        category: metadataData.category || "Transferencia",
+        paymentMethod: metadataData.paymentMethod || "Efectivo",
         amount: toNumber(amount),
         type: "pago_tarjeta",
         cardId,
         userId,
-        createdAt: serverTimestamp(),
-        date: metadata.date || "Justo ahora",
-        icon: metadata.icon || "payments",
-        iconColor: metadata.iconColor || "emerald",
+        createdAt: customDate ? parseLocalDate(customDate) : serverTimestamp(),
+        date: metadataData.date || "Justo ahora",
+        icon: metadataData.icon || "payments",
+        iconColor: metadataData.iconColor || "emerald",
     });
 }
 

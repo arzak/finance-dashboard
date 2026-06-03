@@ -1,6 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const getTodayString = () => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function AddTransactionModal({
     isOpen,
     onClose,
@@ -15,6 +23,7 @@ export default function AddTransactionModal({
     const [category, setCategory] = useState("Comida");
     const [selectedCreditCardId, setSelectedCreditCardId] = useState("");
     const [selectedPaymentCardId, setSelectedPaymentCardId] = useState("");
+    const [date, setDate] = useState(getTodayString());
 
     const selectedCreditCard = useMemo(
         () => creditCards?.find((card) => card.id === selectedCreditCardId) || null,
@@ -63,11 +72,35 @@ export default function AddTransactionModal({
         setCategory("Comida");
         setSelectedCreditCardId("");
         setSelectedPaymentCardId("");
+        setDate(getTodayString());
     };
 
     const handleSubmit = (event) => {
         event.preventDefault();
         if (!amount) return;
+
+        const getCategoryIconAndColor = (cat, txType) => {
+            if (txType === "ingreso") {
+                switch (cat) {
+                    case "Nomina": return { icon: "payments", color: "emerald" };
+                    case "Ahorro": return { icon: "savings", color: "indigo" };
+                    default: return { icon: "account_balance_wallet", color: "blue" };
+                }
+            }
+            switch (cat) {
+                case "Comida": return { icon: "restaurant", color: "orange" };
+                case "Tecnología": return { icon: "devices", color: "blue" };
+                case "Telefonía": return { icon: "phone_iphone", color: "indigo" };
+                case "Transporte": return { icon: "directions_car", color: "purple" };
+                case "Vivienda": return { icon: "home", color: "emerald" };
+                case "Salud": return { icon: "medical_services", color: "rose" };
+                case "Medicamentos": return { icon: "pill", color: "teal" };
+                case "Pensiones": return { icon: "account_balance", color: "amber" };
+                default: return { icon: "shopping_bag", color: "slate" };
+            }
+        };
+
+        const { icon, color: iconColor } = getCategoryIconAndColor(category, type);
 
         if (type === "gasto") {
             const isCreditExpense = paymentMethod === "Tarjeta de Credito";
@@ -81,10 +114,11 @@ export default function AddTransactionModal({
                 paymentMethod: finalPaymentMethod,
                 amount: parseFloat(amount),
                 type,
-                date: "Justo ahora",
+                date: date,
+                customDate: date,
                 cardId: isCreditExpense ? selectedCreditCard.id : null,
-                icon: category === "Comida" ? "restaurant" : category === "Tecnologia" ? "shopping_bag" : "credit_card",
-                iconColor: category === "Comida" ? "orange" : category === "Tecnologia" ? "blue" : "purple",
+                icon,
+                iconColor,
             });
         } else if (type === "ingreso") {
             onAdd({
@@ -93,9 +127,10 @@ export default function AddTransactionModal({
                 paymentMethod: null,
                 amount: parseFloat(amount),
                 type,
-                date: "Justo ahora",
-                icon: category === "Nomina" ? "payments" : category === "Ahorro" ? "savings" : "account_balance_wallet",
-                iconColor: category === "Nomina" ? "emerald" : category === "Ahorro" ? "indigo" : "blue",
+                date: date,
+                customDate: date,
+                icon,
+                iconColor,
             });
         } else if (type === "pago_tarjeta") {
             if (!selectedPaymentCard) return;
@@ -115,7 +150,8 @@ export default function AddTransactionModal({
                 paymentMethod,
                 amount: parseFloat(amount),
                 type: "pago_tarjeta",
-                date: "Justo ahora",
+                date: date,
+                customDate: date,
                 cardId: selectedPaymentCard.id,
                 icon: "payments",
                 iconColor: "emerald",
@@ -198,6 +234,17 @@ export default function AddTransactionModal({
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha</label>
+                                <input
+                                    type="date"
+                                    value={date}
+                                    onChange={(event) => setDate(event.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    required
+                                />
+                            </div>
+
                             {type !== "pago_tarjeta" && (
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Categoria</label>
@@ -209,9 +256,13 @@ export default function AddTransactionModal({
                                         {type === "gasto" ? (
                                             <>
                                                 <option value="Comida">Comida y Restaurantes</option>
-                                                <option value="Tecnologia">Tecnologia</option>
+                                                <option value="Tecnología">Tecnología</option>
+                                                <option value="Telefonía">Telefonía</option>
                                                 <option value="Transporte">Transporte y Viajes</option>
                                                 <option value="Vivienda">Vivienda</option>
+                                                <option value="Salud">Salud</option>
+                                                <option value="Medicamentos">Medicamentos</option>
+                                                <option value="Pensiones">Pensiones</option>
                                                 <option value="Otros">Otros</option>
                                             </>
                                         ) : (

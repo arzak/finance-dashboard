@@ -10,6 +10,7 @@ import {
     where,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { parseLocalDate } from "../utils/transactionDates";
 
 function sortByCreatedAtDesc(items) {
     return [...items].sort((a, b) => {
@@ -39,10 +40,11 @@ export function subscribeToTransactions(userId, onData, onError) {
 }
 
 export async function addTransaction(userId, transaction) {
+    const { customDate, ...transactionData } = transaction;
     await addDoc(collection(db, "transactions"), {
-        ...transaction,
+        ...transactionData,
         userId,
-        createdAt: serverTimestamp(),
+        createdAt: customDate ? parseLocalDate(customDate) : serverTimestamp(),
     });
 }
 

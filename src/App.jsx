@@ -6,6 +6,7 @@ import { useFinance } from "./contexts/FinanceContext";
 import { migrateOrphanedDocs } from "./migrate";
 import { calculateCardFinancialDetails } from "./utils/financeCalculations";
 import { exportTransactionsToCsv } from "./services/exportCsvService";
+import { getTransactionDate } from "./utils/transactionDates";
 
 const AddTransactionModal = lazy(() => import("./components/modals/AddTransactionModal"));
 const AddCreditCardModal = lazy(() => import("./components/modals/AddCreditCardModal"));
@@ -224,9 +225,7 @@ function App() {
         const gastos = transactions
             .filter(tx => {
                 if (tx.type !== 'gasto') return false;
-                const txDate = tx.createdAt && typeof tx.createdAt.toDate === 'function'
-                    ? tx.createdAt.toDate()
-                    : (tx.date === 'Hoy' || tx.date === 'Justo ahora' ? new Date() : null);
+                const txDate = getTransactionDate(tx);
                 if (!txDate) return false;
                 return txDate.getFullYear() === year && txDate.getMonth() === month;
             })
@@ -239,8 +238,7 @@ function App() {
     const dayTotals = { 'Mon': 0, 'Tue': 0, 'Wed': 0, 'Thu': 0, 'Fri': 0, 'Sat': 0, 'Sun': 0 };
     transactions.forEach(tx => {
         if (tx.type === 'gasto') {
-            // Check if it's a Firestore Timestamp, otherwise use current date for mock
-            const txDate = tx.createdAt && typeof tx.createdAt.toDate === 'function' ? tx.createdAt.toDate() : new Date();
+            const txDate = getTransactionDate(tx) || new Date();
             const dayName = txDate.toLocaleDateString('en-US', { weekday: 'short' });
             if (dayTotals[dayName] !== undefined) {
                 dayTotals[dayName] += parseFloat(tx.amount);
@@ -250,7 +248,17 @@ function App() {
     const maxDayTotal = Math.max(...Object.values(dayTotals), 100); // Avoid division by 0 and ensure min height
 
     // Calculate category totals for Gasto Profile
-    const categoryTotals = { 'Vivienda': 0, 'Comida': 0, 'Transporte': 0, 'Tecnología': 0, 'Otros': 0 };
+    const categoryTotals = {
+        'Vivienda': 0,
+        'Comida': 0,
+        'Transporte': 0,
+        'Tecnología': 0,
+        'Telefonía': 0,
+        'Salud': 0,
+        'Medicamentos': 0,
+        'Pensiones': 0,
+        'Otros': 0
+    };
     let totalGastado = 0;
     transactions.forEach(tx => {
         if (tx.type === 'gasto') {
@@ -269,6 +277,10 @@ function App() {
         'Comida': '#fb923c', // Orange
         'Transporte': '#a855f7', // Purple
         'Vivienda': '#10b981', // Emerald
+        'Telefonía': '#6366f1', // Indigo
+        'Salud': '#f43f5e', // Rose
+        'Medicamentos': '#0d9488', // Teal
+        'Pensiones': '#d97706', // Amber
         'Otros': '#94a3b8'  // Slate
     };
 

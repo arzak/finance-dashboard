@@ -42,7 +42,32 @@ export function FinanceProvider({ children }) {
         const unsubscribeTransactions = subscribeToTransactions(
             currentUser.uid,
             (items) => {
-                setTransactions(items);
+                const normalizedItems = items.map((item) => {
+                    let updatedItem = { ...item };
+                    
+                    if (updatedItem.category === "Tecnologia") {
+                        updatedItem.category = "Tecnología";
+                    }
+
+                    if (
+                        (updatedItem.category === "Otros" || updatedItem.category === "Otros Ingresos" || updatedItem.category === "Otro") &&
+                        updatedItem.store &&
+                        /pensi[oó]n/i.test(updatedItem.store)
+                    ) {
+                        updatedItem.category = "Pensiones";
+                        updatedItem.icon = "account_balance";
+                        updatedItem.iconColor = "amber";
+                    }
+
+                    if (updatedItem.store && /gym/i.test(updatedItem.store)) {
+                        updatedItem.category = "Salud";
+                        updatedItem.icon = "medical_services";
+                        updatedItem.iconColor = "rose";
+                    }
+
+                    return updatedItem;
+                });
+                setTransactions(normalizedItems);
                 setError(null);
             },
             (err) => {
