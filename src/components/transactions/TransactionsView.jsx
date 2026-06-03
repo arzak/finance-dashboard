@@ -5,6 +5,7 @@ import SectionCard from "../common/SectionCard";
 import { formatCurrency } from "../../utils/formatters";
 import { getTransactionDate, getTransactionMonthKey } from "../../utils/transactionDates";
 import { isCreditCardExpense } from "../../utils/financeCalculations";
+import { TRANSACTION_FILTER_CATEGORIES } from "../../constants/transactionCategories";
 
 const MONTHS_LABEL = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 const getSignedAmount = (transaction) => Math.abs(parseFloat(transaction.amount) || 0);
@@ -45,7 +46,7 @@ export default function TransactionsView({
     onOpenClearAll,
     onDeleteTransaction,
 }) {
-    const allCategories = ["todas", ...Array.from(new Set(transactions.map((transaction) => transaction.category).filter(Boolean)))];
+    const allCategories = ["todas", ...TRANSACTION_FILTER_CATEGORIES];
     const allMonths = [
         "todos",
         ...Array.from(new Set(transactions.map((transaction) => {

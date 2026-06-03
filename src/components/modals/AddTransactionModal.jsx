@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "../../constants/transactionCategories";
 
 const getTodayString = () => {
     const today = new Date();
@@ -24,6 +25,24 @@ export default function AddTransactionModal({
     const [selectedCreditCardId, setSelectedCreditCardId] = useState("");
     const [selectedPaymentCardId, setSelectedPaymentCardId] = useState("");
     const [date, setDate] = useState(getTodayString());
+
+    const expenseCategoryLabels = {
+        Comida: "Comida y Restaurantes",
+        Tecnología: "Tecnología",
+        Telefonía: "Telefonía",
+        Transporte: "Transporte y Viajes",
+        Vivienda: "Vivienda",
+        Salud: "Salud",
+        Medicamentos: "Medicamentos",
+        Pensiones: "Pensiones",
+        Otros: "Otros",
+    };
+
+    const incomeCategoryLabels = {
+        Nomina: "Nomina",
+        Ahorro: "Ahorro",
+        Otros: "Otros Ingresos",
+    };
 
     const selectedCreditCard = useMemo(
         () => creditCards?.find((card) => card.id === selectedCreditCardId) || null,
@@ -254,23 +273,13 @@ export default function AddTransactionModal({
                                         className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
                                     >
                                         {type === "gasto" ? (
-                                            <>
-                                                <option value="Comida">Comida y Restaurantes</option>
-                                                <option value="Tecnología">Tecnología</option>
-                                                <option value="Telefonía">Telefonía</option>
-                                                <option value="Transporte">Transporte y Viajes</option>
-                                                <option value="Vivienda">Vivienda</option>
-                                                <option value="Salud">Salud</option>
-                                                <option value="Medicamentos">Medicamentos</option>
-                                                <option value="Pensiones">Pensiones</option>
-                                                <option value="Otros">Otros</option>
-                                            </>
+                                            EXPENSE_CATEGORIES.map((option) => (
+                                                <option key={option} value={option}>{expenseCategoryLabels[option] || option}</option>
+                                            ))
                                         ) : (
-                                            <>
-                                                <option value="Nomina">Nomina</option>
-                                                <option value="Ahorro">Ahorro</option>
-                                                <option value="Otros">Otros Ingresos</option>
-                                            </>
+                                            INCOME_CATEGORIES.map((option) => (
+                                                <option key={option} value={option}>{incomeCategoryLabels[option] || option}</option>
+                                            ))
                                         )}
                                     </select>
                                 </div>

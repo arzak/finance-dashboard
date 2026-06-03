@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:transaction-categories": "npm --prefix functions run migrate:transaction-categories --"
   },
   "keywords": [],
   "author": "",
