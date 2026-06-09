@@ -2,13 +2,12 @@ import { formatNumericDate } from "../utils/formatters";
 import { getTransactionDate } from "../utils/transactionDates";
 
 export function exportTransactionsToCsv(rowsToExport) {
-    const escapeValue = (value) => {
-        if (value === null || value === undefined) return "";
-        const stringValue = String(value);
-        return stringValue.includes(",") || stringValue.includes('"') || stringValue.includes("\n")
-            ? `"${stringValue.replace(/"/g, '""')}"`
-            : stringValue;
-    };
+    const escapeXml = (value) => String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&apos;");
 
     const headers = ["Fecha", "Tipo", "Descripcion", "Categoria", "Metodo de Pago", "Monto"];
     const rows = rowsToExport.map((transaction) => {
@@ -27,23 +26,44 @@ export function exportTransactionsToCsv(rowsToExport) {
                 : "Ingreso";
 
         return [
-            escapeValue(dateLabel),
-            escapeValue(typeLabel),
-            escapeValue(transaction.store),
-            escapeValue(transaction.category),
-            escapeValue(transaction.paymentMethod || ""),
-            escapeValue(amount),
-        ].join(",");
+            dateLabel,
+            typeLabel,
+            transaction.store || "",
+            transaction.category || "",
+            transaction.paymentMethod || "",
+            amount,
+        ];
     });
 
-    const csvContent = [headers.join(","), ...rows].join("\n");
+    const buildRow = (columns) => (
+        `<Row>${columns.map((value) => `<Cell><Data ss:Type="String">${escapeXml(value)}</Data></Cell>`).join("")}</Row>`
+    );
+
+    const workbookContent = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Worksheet ss:Name="Transacciones">
+  <Table>
+   ${buildRow(headers)}
+   ${rows.map((row) => buildRow(row)).join("")}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
     const today = new Date().toISOString().slice(0, 10);
-    const dataUri = `data:text/csv;charset=utf-8,%EF%BB%BF${encodeURIComponent(csvContent)}`;
+    const blob = new Blob([workbookContent], {
+        type: "application/vnd.ms-excel;charset=utf-8;",
+    });
+    const downloadUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", dataUri);
-    link.setAttribute("download", `transacciones_${today}.csv`);
+    link.setAttribute("href", downloadUrl);
+    link.setAttribute("download", `transacciones_${today}.xls`);
     link.style.display = "none";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(downloadUrl);
 }
